@@ -4,7 +4,7 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <title>dojo.sensor.geolocation - Example Site</title>
-		<script type="text/javascript" src="dojo/dojo/dojo.js"></script>
+		<script type="text/javascript" src="dojo/dojo.js"></script>
 		<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
 		
 		<style>
@@ -24,12 +24,42 @@
 		
 		
 		<script type="text/javascript">
+
 			dojo.require("dojo.sensor.geolocation");
-			
 			dojo.addOnLoad(function(){
 				
+				var options = {
+					enableHighAccuracy: true,
+					timeout: 10000,
+					maximumAge: Infinity
+				}
+				
+				var watch_id = dojo.sensor.geolocation.watchPosition(function(position, supported){
+					console.log('watching it');
+				},function(error, browser_support){
+					handle_error(error, browser_support);
+				},
+				options);
+				console.log(watch_id);
+				
+				
+				//Define a default position object to use if browser is unsuported
+				var pos = {
+					coords: {
+						latitude: 41.1603,
+						longitude: -80.1225,
+						altitude: null,
+						accuracy: null,
+						altitude_accuracy: null,
+						heading: null, // North
+						speed: 0 // Not moving
+					},
+					timestamp: null
+				};
+				
+				
 				dojo.sensor.geolocation.getPosition(function(position, unsupported){
-						if( unsupported ){
+					if( unsupported ){
 	                    handle_error(null, false);
 	                }
 	                else{
@@ -71,14 +101,15 @@
 				},
 				function(error, browser_support){
 					handle_error(error, browser_support);
-				});
+				},
+				options,
+				pos);
 				
 			});
 			
 			function handle_error(error, browser_support){
                 var message;
                 var status = dojo.byId("status");
-
 
                 if( browser_support ){
                     // Browser is supported. Application error encountered.
@@ -88,9 +119,33 @@
                 }
                 else{
                     // Browser is unsupported. Notify the user.
-                   message = "Your browser does not support geolocation. Picking a location for you";
+                   message = "Your browser does not support geolocation. Attempting to load a default location...";
                 }
-
+				
+				if (error) {
+					console.error(error.message);
+					
+					switch (error.code) {
+						case error.PERMISSION_DENIED:
+							message += "<br />Browser has not granted permission to utilize your position information.  Try refreshing the page.";
+							break;
+						case error.POSITION_UNAVAILABLE:
+							message += "<br />Your browser does not support geolocation and a default position has not been provided.";
+							break;
+						case error.TIMEOUT:
+							message += "<br />This is taking too long.  Try refreshing the page.";
+							break;
+						case error.UNSUPPORTED_FEATURE:
+							message += "<br />That feature is not supported by this browser.";
+							break;
+						default:
+							message += "<br />An unknown error has occured.  Please refresh the page.";
+							break;
+					}
+				}else{
+					message += "<br /><span class=\"success\">Default location loaded.</span>";
+				}
+				
                 status = dojo.byId('status');
                 if( status ){
                     status.innerHTML = message;
