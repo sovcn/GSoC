@@ -20,12 +20,23 @@
     	
         <div id="status">Determining current location...</div>
       	<div id="coordinates"><span id="latitude"></span>, <span id="longitude"></span></div>
+		<input type="button" id="stop_watch" />
       	<div id="map_canvas" style="width:600px; height:600px"></div>
 		
 		
 		<script type="text/javascript">
 
 			dojo.require("dojo.sensor.geolocation");
+			
+			var watch_id;
+			
+			dojo.connect(dojo.byId("stop_watch"), "onclick", null, function(){
+				console.log(watch_id);
+				if( watch_id >=0 ){
+					dojo.sensor.geolocation.clearWatch(watch_id);
+				}
+			});
+			
 			dojo.addOnLoad(function(){
 				
 				var options = {
@@ -34,16 +45,6 @@
 					maximumAge: Infinity
 				}
 				
-				var watch_id = dojo.sensor.geolocation.watchPosition(function(position, supported){
-					console.log('watching it');
-				},function(error, browser_support){
-					handle_error(error, browser_support);
-				},
-				options);
-				console.log(watch_id);
-				
-				
-				//Define a default position object to use if browser is unsuported
 				var pos = {
 					coords: {
 						latitude: 41.1603,
@@ -57,6 +58,69 @@
 					timestamp: null
 				};
 				
+				watch_id = dojo.sensor.geolocation.watchPosition(function(position, supported){
+					console.log('watching it');
+					getLocation(options,pos);
+				},function(error, browser_support){
+					handle_error(error, browser_support);
+				},
+				options);
+				console.log(watch_id);
+				
+				
+				//Define a default position object to use if browser is unsuported
+				
+				
+				/*dojo.sensor.geolocation.getPosition(function(position, unsupported){
+					if( unsupported ){
+	                    handle_error(null, false);
+	                }
+	                else{
+	                    var status = dojo.byId("status");
+	                    dojo.addClass(status, "success");
+	                    status.innerHTML = "Found your position";
+	                }
+	                var coords = position.coords;
+	                dojo.byId("latitude").innerHTML = coords.latitude;
+	                dojo.byId("longitude").innerHTML = coords.longitude;
+	
+	                if( coords.accuracy ){
+	                    var miles = metersToMiles(coords.accuracy);
+	                    if( miles < .25 ){
+	                        miles = coords.accuracy; // use Meters
+	                    }
+	                    dojo.byId("coordinates").innerHTML += "<br />This position has an estimated accuracy of " + miles + " miles.";
+	                }
+	
+	                if( coords.altitude ){
+	                    dojo.byId("coordinates").innerHTML += "<br />This position has an altitude of " + coords.altitude + " meters.";
+	                }
+	
+	
+	                // Load Google Map
+	                var latlng = new google.maps.LatLng(coords.latitude, coords.longitude);
+	                var myOptions = {
+	                  zoom: 10,
+	                  center: latlng,
+	                  mapTypeId: google.maps.MapTypeId.ROADMAP
+	                };
+	                var map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+	
+	                var marker = new google.maps.Marker({
+	                    position: latlng,
+	                    map: map,
+	                    title: "Your Location"
+	                });
+				},
+				function(error, browser_support){
+					handle_error(error, browser_support);
+				},
+				options,
+				pos);*/
+				
+			});
+			
+			function getLocation(options, pos){
 				
 				dojo.sensor.geolocation.getPosition(function(position, unsupported){
 					if( unsupported ){
@@ -104,8 +168,7 @@
 				},
 				options,
 				pos);
-				
-			});
+			}
 			
 			function handle_error(error, browser_support){
                 var message;
