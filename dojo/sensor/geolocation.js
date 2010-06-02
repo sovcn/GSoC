@@ -1,21 +1,13 @@
+dojo.require("dojo.sensor");
 dojo.provide("dojo.sensor.geolocation");
 
+dojo.require("dojo.gears");
 /*=====
 dojo.sensor.geolocation = { 
   // summary:
   //    provides an interface for accessing the geographical location of a user.
 };
 =====*/
-
-// Define error constants
-dojo.sensor.geolocation.error = {
-	PERMISSION_DENIED: 1,
-	POSITION_UNAVAILABLE: 2,
-	TIMEOUT: 3,
-	UNSUPPORTED_FEATURE: 4,
-	code: 0, // Individual Error Code
-	message: "" // Error message for debugging
-}
 
 dojo.sensor.geolocation.clearWatch = function(/*Integer*/ watchId){
 	// summary:
@@ -89,9 +81,14 @@ dojo.sensor.geolocation.getPosition = function(/*Function*/ callback, /*Function
 	//		maximumAge: Integer
 	//			Location information is often cached by the browser.  Maximum age allows the programmer to specify how old
 	//			cache information is used before it must be replaced by new information.
-        
+	//		default_position: Position Object
+	//			Conforms to the W3C position interface spec. Allows the programmer to specify a default position to be used
+	//			when the user's browser does not support geolocation.  If this is not passed and the browser is not supported,
+	//			an error will be generated instead.
+		
         var location_support;
-
+	
+		
         if(navigator.geolocation){
 			
             // Browser is capable of geolocation
@@ -138,9 +135,10 @@ dojo.sensor.geolocation.getPosition = function(/*Function*/ callback, /*Function
 				}, position_options);
 			}
 			
-        }else if( false ){ // google.gears ){
+        }else if( dojo.gears.available ){ // google.gears ){
             // Try Google Gears - Fails in Safari... find workaround
             location_support = true;
+			alert('using Gears - TODO implement gears support');
             // TODO - Implement Gears support
         }else{
             
@@ -148,7 +146,7 @@ dojo.sensor.geolocation.getPosition = function(/*Function*/ callback, /*Function
             location_support = false;
 			
 			if( options.watchPosition ){
-				error = dojo.sensor.geolocation.error;
+				error = dojo.sensor.error;
 				error.code = error.UNSUPPORTED_FEATURE;
 				error.message = "Error: watchPosition requires a compatible browser. Default location not supported.";
 				
@@ -182,7 +180,8 @@ dojo.sensor.geolocation.getPosition = function(/*Function*/ callback, /*Function
 			}
 			else{
 				// If no default coordinates were found return with an error
-				var error = dojo.sensor.geolocation.error;
+				
+				var error = dojo.sensor.error;
 				error.code = error.POSITION_UNAVAILABLE;
 				error.message = "Error: browser does not support geolocation and no default position was specified."
 				

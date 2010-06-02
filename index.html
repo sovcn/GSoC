@@ -20,7 +20,7 @@
     	
         <div id="status">Determining current location...</div>
       	<div id="coordinates"><span id="latitude"></span>, <span id="longitude"></span></div>
-		<input type="button" id="stop_watch" />
+		<input type="button" id="stop_watch" value="Clear Watch" />
       	<div id="map_canvas" style="width:600px; height:600px"></div>
 		
 		
@@ -58,14 +58,16 @@
 					timestamp: null
 				};
 				
-				watch_id = dojo.sensor.geolocation.watchPosition(function(position, supported){
+				getLocation(options,pos);
+				
+				/*watch_id = dojo.sensor.geolocation.watchPosition(function(position, supported){
 					console.log('watching it');
 					getLocation(options,pos);
 				},function(error, browser_support){
 					handle_error(error, browser_support);
 				},
-				options);
-				console.log(watch_id);
+				options);*/
+				//console.log(watch_id);
 				
 				
 				//Define a default position object to use if browser is unsuported
@@ -137,10 +139,16 @@
 	
 	                if( coords.accuracy ){
 	                    var miles = metersToMiles(coords.accuracy);
+						var meters = false;
 	                    if( miles < .25 ){
 	                        miles = coords.accuracy; // use Meters
+	                        meters = true;
 	                    }
-	                    dojo.byId("coordinates").innerHTML += "<br />This position has an estimated accuracy of " + miles + " miles.";
+						
+						var html = "<br />This position has an estimated accuracy of " + miles;
+						html += (meters) ? " meters." : " miles.";
+	                    dojo.byId("coordinates").innerHTML += html;
+						
 	                }
 	
 	                if( coords.altitude ){
