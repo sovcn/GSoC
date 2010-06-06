@@ -9,6 +9,8 @@ dojo.sensor.geolocation = {
 };
 =====*/
 
+var geolocationWatchId = []; // Keep track of the various watch ids
+
 dojo.sensor.geolocation.clearWatch = function(/*Integer*/ watchId){
 	// summary:
 	//		Wrapper function for the W3C implementation.
@@ -48,13 +50,15 @@ dojo.sensor.geolocation.watchPosition = function(/*Function*/callback, /*Functio
 
 	}else{
 		options = {
-			watchPositiong: true
+			watchPosition: true
 		}
 	}
 	
 	// Keep track of the watch_id value for later use.
 	var watch_id = dojo.sensor.geolocation.getPosition(callback, error_callback, options);
-	console.log(watch_id);
+	
+	geolocationWatchId.push(watch_id);
+	
 	options.watchPosition = false;
 	return watch_id;
 }
@@ -65,7 +69,10 @@ dojo.sensor.geolocation.getPosition = function(/*Function*/ callback, /*Function
 	//		any time their position changes. Utilizes the W3C navigator.geolocation interface.
 	// callback: Function
 	//		The function that will be called when a location is succesfully found and loaded
-	// error_callback: Function
+	//		Callback should take at most two parameters.
+	//			position: A position object as outlined by the W3C spec
+	//			location_support: A boolean value which indicates whether a position has been found by geolocation(false) or by 
+	//				other means(true) such as specifying a default location.
 	//		The function that will be called when an error occurs.  Errors can come from two sources: geolocation methods and improper usage
 	//	options: Object
 	//		This is a javascript object holding various information for use with this function. Any values can be passed
@@ -87,7 +94,18 @@ dojo.sensor.geolocation.getPosition = function(/*Function*/ callback, /*Function
 	//			an error will be generated instead.
 		
         var location_support;
+		
+		if( typeof(callback) != 'function' ){
+			var error = dojo.sensor.error;
+			error.code = error.IMPROPER_IMPLEMENTATION;
+			error.message = "Error: callback parameter must be a function - geolocation.getPosition()";
+			console.error(error.message); // Notify debugger
+			callback = function() {}; // Ensure that API does not try to perform a call on something that isn't a function
+		}
 	
+		if( typeof(error_callback) != 'function' ){
+			error_callback = function() {};
+		}
 		
         if(navigator.geolocation){
 			
@@ -107,14 +125,13 @@ dojo.sensor.geolocation.getPosition = function(/*Function*/ callback, /*Function
 			}else{
 				// If no options have been specified, initalize the position options to be passed to
 				// the geolocation functions to null to ensure proper parameter initilization.
-				var position_options = null;
+				var position_options = {};
 			}
 			
-			if (options.watchPosition) {
+			if (options && options.watchPosition) {
 				// watchPosition was called.  Implement geolocation.watchPosition
 				console.log("navigator.geolocation.watchPosition()");
 				var watch_id = navigator.geolocation.watchPosition(function(position){
-					console.log("callback");
 					callback(position, false); // Callback Function
 					return;
 				},function(error){
@@ -176,7 +193,7 @@ dojo.sensor.geolocation.getPosition = function(/*Function*/ callback, /*Function
 					timestamp: default_position.timestamp
 				};
 				
-				callback(pos, true);
+				callback(pos, true); // Pass true as the second parameter to indicate that the a default location has been loaded.
 			}
 			else{
 				// If no default coordinates were found return with an error
@@ -197,4 +214,5 @@ dojo.sensor.geolocation.handleError = function(/*Object*/ error, /*Boolean*/ bro
         //alert('An Error Occured: code' + error.code);
 		// This function is called in conjunction with an error callback function.  May be overridden and used for additional error handling.
 		
-    }
+ }
+
