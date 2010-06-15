@@ -11,6 +11,18 @@ dojo.sensor.geolocation = {
 
 var geolocationWatchId = []; // Keep track of the various watch ids
 
+dojo.sensor.geolocation = {
+		NORTH: 1,
+		NORTH_EAST: 2,
+		EAST: 3,
+		SOUTH_EAST: 4,
+		SOUTH: 5,
+		SOUTH_WEST: 6,
+		WEST: 7,
+		NORT_WEST: 8,
+		last_heading: null
+};
+
 dojo.sensor.geolocation.clearWatch = function(/*Integer*/ watchId){
 	// summary:
 	//		Wrapper function for the W3C implementation.
@@ -120,7 +132,9 @@ dojo.sensor.geolocation.getPosition = function(/*Function*/ callback, /*Function
 				var position_options = {
 					enableHighAccuracy: options.enableHighAccuracy, // Boolean
 					timeout: options.timeout, // Long
-					maximumAge: options.maximumAge // Long
+					maximumAge: options.maximumAge, // Long
+					getHeading: options.getHeading, // Boolean
+					onHeadingChange: options.onHeadingChange // Callback function for when the heading changes "significantly"
 				}
 			}else{
 				// If no options have been specified, initalize the position options to be passed to
@@ -132,7 +146,23 @@ dojo.sensor.geolocation.getPosition = function(/*Function*/ callback, /*Function
 				// watchPosition was called.  Implement geolocation.watchPosition
 				console.log("navigator.geolocation.watchPosition()");
 				var watch_id = navigator.geolocation.watchPosition(function(position){
+					
+					if(position_options.getHeading){
+				    	position.coords.simpleHeading = Math.round(position.coords.heading/45 + 1);
+				    	if( position.coords.simpleHeading >= 9 ){
+				    		position.coords.simpleHeading = 1;
+				    	}
+				    	
+				    	if( typeof(position_options.onHeadingChange) == "function" && dojo.sensor.geolocation.last_heading != null 
+			    				&& position.coords.simpleHeading != dojo.sensor.geolocation.last_heading){
+				    		position_options.onHeadingChange(position.coords.simpleHeading);
+				    	}
+				    }
+					
 					callback(position, false); // Callback Function
+					
+					dojo.sensor.geolocation.last_heading = position.coords.simpleHeading; // Keep track of the last heading for callback function
+					
 					return;
 				},function(error){
 					dojo.sensor.geolocation.handleError(error, location_support);
@@ -144,7 +174,24 @@ dojo.sensor.geolocation.getPosition = function(/*Function*/ callback, /*Function
 				// watchPosition was not called.  Implement geolocation.getCurrentPosition
 				console.log("navigator.geolocation.getCurrentPosition()");
 				navigator.geolocation.getCurrentPosition(function(position){
-					return callback(position, false); // Callback Function
+					
+				    if(position_options.getHeading){
+				    	position.coords.simpleHeading = Math.round(position.coords.heading/45 + 1);
+				    	if( position.coords.simpleHeading >= 9 ){
+				    		position.coords.simpleHeading = 1;
+				    	}
+				    	
+				    	if( typeof(position_options.onHeadingChange) == "function" && dojo.sensor.geolocation.last_heading != null 
+				    				&& position.coords.simpleHeading != dojo.sensor.geolocation.last_heading){
+				    		position_options.onHeadingChange(position.coords.simpleHeading);
+				    	}
+				    }
+					
+					callback(position, false); // Callback Function
+					
+					dojo.sensor.geolocation.last_heading = position.coords.simpleHeading; // Keep track of the last heading for callback function
+					
+					return;
 				}, function(error){
 					dojo.sensor.geolocation.handleError(error, location_support);
 					
