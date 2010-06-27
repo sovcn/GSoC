@@ -1,3 +1,12 @@
+/*
+	Copyright (c) 2004-2009, The Dojo Foundation All Rights Reserved.
+	Available via Academic Free License >= 2.1 OR the modified BSD license.
+	see: http://dojotoolkit.org/license for details
+*/
+
+
+if(!dojo._hasResource["dojo.sensor"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojo.sensor"] = true;
 dojo.provide("dojo.sensor");
 
 dojo.sensor = {
@@ -11,6 +20,8 @@ dojo.sensor = {
 			TIMEOUT: 3,
 			UNSUPPORTED_FEATURE: 4,
 			IMPROPER_IMPLEMENTATION: 5,
+			APPLICATION_ERROR: 6,
+			DEVICE_ERROR: 7,
 			code: 0, // Individual Error Code
 			message: "" // Error message for debugging
 		},
@@ -38,3 +49,6 @@ dojo.sensor = {
 		// No change, defaults to native.
 
 	}
+
+
+}

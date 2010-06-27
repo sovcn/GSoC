@@ -1,3 +1,12 @@
+/*
+	Copyright (c) 2004-2009, The Dojo Foundation All Rights Reserved.
+	Available via Academic Free License >= 2.1 OR the modified BSD license.
+	see: http://dojotoolkit.org/license for details
+*/
+
+
+if(!dojo._hasResource["dojo.sensor.geolocation"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojo.sensor.geolocation"] = true;
 dojo.require("dojo.sensor");
 dojo.provide("dojo.sensor.geolocation");
 
@@ -43,7 +52,7 @@ dojo.sensor.geolocation = {
 		navigator.geolocation.clearWatch(watchId);
 	}
 	
-	dojo.sensor.geolocation.watchPosition = function(/*Function*/callback, /*Function*/ error_callback, /*Object*/ options){
+	dojo.sensor.geolocation.watchPosition = function(/*Function*/callback, /*Object*/ options){
 		// summary:
 		//		watchPosition utilizes several methods which will monitor a user's geolocation and will fire a callback
 		//		any time their position changes. Utilizes the W3C navigator.geolocation interface.  Returns an identifier
@@ -77,7 +86,7 @@ dojo.sensor.geolocation = {
 		}
 		
 		// Keep track of the watch_id value for later use.
-		var watch_id = dojo.sensor.geolocation.getPosition(callback, error_callback, options);
+		var watch_id = dojo.sensor.geolocation.getPosition(callback, options);
 		
 		geolocationWatchId.push(watch_id);
 		
@@ -85,7 +94,7 @@ dojo.sensor.geolocation = {
 		return watch_id;
 	}
 	
-	dojo.sensor.geolocation.getPosition = function(/*Function*/ callback, /*Function*/ error_callback, /*PositionOptions*/options, /*Position*/ default_position){
+	dojo.sensor.geolocation.getPosition = function(/*Object*/ callback, /*PositionOptions*/options, /*Position*/ default_position){
 	    // summary:
 		//		watchPosition utilizes several methods which will monitor a user's geolocation and will fire a callback
 		//		any time their position changes. Utilizes the W3C navigator.geolocation interface.
@@ -117,16 +126,16 @@ dojo.sensor.geolocation = {
 			
 	        var location_support;
 			
-			if( typeof(callback) != 'function' ){
+			if( typeof(callback.success) != 'function' ){
 				var error = dojo.sensor.error;
 				error.code = error.IMPROPER_IMPLEMENTATION;
 				error.message = "Error: callback parameter must be a function - geolocation.getPosition()";
 				console.error(error.message); // Notify debugger
-				callback = function() {}; // Ensure that API does not try to perform a call on something that isn't a function
+				callback.success = function() {}; // Ensure that API does not try to perform a call on something that isn't a function
 			}
 		
-			if( typeof(error_callback) != 'function' ){
-				error_callback = function() {};
+			if( typeof(callback.error) != 'function' ){
+				callback.error = function() {};
 			}
 			
 	        if(navigator.geolocation){
@@ -154,9 +163,8 @@ dojo.sensor.geolocation = {
 				
 				if (options && options.watchPosition) {
 					// watchPosition was called.  Implement geolocation.watchPosition
-					console.log("navigator.geolocation.watchPosition()");
 					var watch_id = navigator.geolocation.watchPosition(function(position){
-						
+						alert('yep');
 						if(position_options.getHeading){
 					    	position.coords.simpleHeading = Math.round(position.coords.heading/45 + 1);
 					    	if( position.coords.simpleHeading >= 9 ){
@@ -169,16 +177,16 @@ dojo.sensor.geolocation = {
 					    	}
 					    }
 						
-						callback(position, false); // Callback Function
+						callback.success(position, false); // Callback Function
 						
 						dojo.sensor.geolocation.last_heading = position.coords.simpleHeading; // Keep track of the last heading for callback function
 						
 						return;
 					},function(error){
+						alert('watch');
 						handleError(error, location_support);
-						return error_callback(error, location_support); // Error Callback Function
+						return callback.error(error, location_support); // Error Callback Function
 					}, position_options);
-					console.log(watch_id);
 					return watch_id;
 				}else {
 					// watchPosition was not called.  Implement geolocation.getCurrentPosition
@@ -197,7 +205,7 @@ dojo.sensor.geolocation = {
 					    	}
 					    }
 						
-						callback(position, false); // Callback Function
+						callback.success(position, false); // Callback Function
 						
 						dojo.sensor.geolocation.last_heading = position.coords.simpleHeading; // Keep track of the last heading for callback function
 						
@@ -205,7 +213,7 @@ dojo.sensor.geolocation = {
 					}, function(error){
 						handleError(error, location_support);
 						
-						return error_callback(error, location_support); // Error Callback Function
+						return callback.error(error, location_support); // Error Callback Function
 					}, position_options);
 				}
 				
@@ -225,7 +233,7 @@ dojo.sensor.geolocation = {
 					error.message = "Error: watchPosition requires a compatible browser. Default location not supported.";
 					
 					handleError(error, location_support);
-					return error_callback(error, location_support);
+					return callback.error(error, location_support);
 				}
 				
 				if ( default_position ) {
@@ -250,7 +258,7 @@ dojo.sensor.geolocation = {
 						timestamp: default_position.timestamp
 					};
 					
-					callback(pos, true); // Pass true as the second parameter to indicate that the a default location has been loaded.
+					callback.success(pos, true); // Pass true as the second parameter to indicate that the a default location has been loaded.
 				}
 				else{
 					// If no default coordinates were found return with an error
@@ -261,9 +269,11 @@ dojo.sensor.geolocation = {
 					
 					// Handle Error
 					handleError(error, location_support);
-					return error_callback(error, location_support);
+					return callback.error(error, location_support);
 				}
 	        }
 	    }
 	    
 })();
+
+}

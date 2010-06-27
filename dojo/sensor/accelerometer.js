@@ -1,3 +1,12 @@
+/*
+	Copyright (c) 2004-2009, The Dojo Foundation All Rights Reserved.
+	Available via Academic Free License >= 2.1 OR the modified BSD license.
+	see: http://dojotoolkit.org/license for details
+*/
+
+
+if(!dojo._hasResource["dojo.sensor.accelerometer"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojo.sensor.accelerometer"] = true;
 dojo.require('dojo.sensor');
 dojo.provide("dojo.sensor.accelerometer");
 
@@ -83,7 +92,12 @@ dojo.sensor.accelerometer = {
 		return _orientation;
 	}
 	
-	var determineShake = function(a){
+	var determineShake = function(/*Acceleration Object*/ a){
+		// summary:
+		//		Uses various algorithmic methods to determine whether the acceleration object passed as a parameter
+		//		represents a device on which a shake has occured.
+		//	a:Acceleration Object
+		//		Represents the current orientation of a device.  Used to determine whether it has been shook.
 		
 		// Should be true if an orientation change is occuring. Prevents it from being detected as a shake
 		// Shake is a rapid change in x, but not y
@@ -91,13 +105,11 @@ dojo.sensor.accelerometer = {
 		
 		// Try to determine whether or not the user has been shaking the device. TODO fine tune this
 		if( ( a.x > 10 || Math.abs(a.x - _lastAcceleration.x) > 6 ) && _initShake != true && detectOrientChange != true ){
-			
-			
+
 			_initShake = true;
 			
 			setTimeout(function(){
 				_initShake = false;
-				//alert('set to false');
 			},1500); // Prevent further shake operations for a second and a half - TODO test for proper duration	
 			
 			return true;
@@ -107,7 +119,22 @@ dojo.sensor.accelerometer = {
 		
 	}
 	
-	dojo.sensor.accelerometer.watchAccelerometer = function(/*Object*/ callback, /*Object*/ options){
+	dojo.sensor.accelerometer.watchAcceleration = function(/*Object*/ callback, /*Object*/ options){
+		// summary:
+		//		Implements the W3C accelerometer method of the same name using one of the following platforms: (Native or Phonegap).
+		//		Expects two objects as parameters.  The first parameter(callback) is an object containing various callback functions:
+		//		success, error, shake, orientationChange.  The second parameter is an object containing runtime options such as the
+		//		frequency of the watch.
+		//	callback: Object
+		//		success: Function
+		//			function to be called when the acceleration object has successfully been obtained from the device.
+		//		error: Function
+		//			called when an error occurs
+		//		shake: Function
+		//			called whenever a shake has been detected by the determineShake private method
+		//		orientationChange: Function
+		//			called whenever the device switches between orientations (Portrait and Landscape) as determined by the
+		//			determineOrientation private method.
 		if ( dojo.sensor.getPlatform() == dojo.sensor.platforms.NATIVE) {
 			error = dojo.sensor.error;
 			error.code = error.UNSUPPORTED_FEATURE;
@@ -116,10 +143,6 @@ dojo.sensor.accelerometer = {
 
 			return callback.error(error);
 		}else{
-			// summary:
-			//		
-			// options: Object
-			//		frequency, detect_orientation, on_orient_change (callback), 
 			
 			if( options != undefined && typeof(options) == "object" ){
 				// Set up options object
@@ -130,18 +153,18 @@ dojo.sensor.accelerometer = {
 				accel_options.frequency = (options.frequency != undefined)? options.frequency : 1000; // Defaults to 1/10 of a second
 				accel_options.getOrientation = (options.getOrientation != undefined)? options.getOrientation : false; // defaults to false
 				
-				// Ensure that on_orient_change is a function
 				
+				// Determine whether the orientationChange callback function has been requested by the programmer
 				if( callback.orientationChange != undefined && typeof(callback.orientationChange) == "function" ){
 					accel_options.getOrientation = true;
 				}
-				
-				//callback.watchShake = (typeof(callback.watchShake) == "function")? callback.watchShake : function(){};
+
 				
 			}else{
 				accel_options = {};
 			}
-
+			
+			// Implement PhoneGaps implementation of the W3C accelerometer API
 	  		_timer = navigator.accelerometer.watchAcceleration(function(a){
 	  			
 	  			var blockShake = false;  // Temp value .. goes out of scope
@@ -158,6 +181,7 @@ dojo.sensor.accelerometer = {
 	  				}
 	  			}
 	  			
+	  			// Determine whether or not a shake has occured
 	  			if( typeof(callback.shake) == "function" && _firstAcceleration != true && blockShake != true ){
 	  				var shake = determineShake(a);
 	  				if( shake == true ){
@@ -167,7 +191,8 @@ dojo.sensor.accelerometer = {
 	  			
 	  			_firstAcceleration = false;
 	  			
-	  			if( device.platform == "iPod touch" || device.platform == "iPhone" ){
+	  			if( dojo.sensor.getPlatform() == dojo.sensor.platforms.PHONE_GAP && // Must be phonegap to use device object
+	  							device.platform == "iPod touch" || device.platform == "iPhone" || device.platform == "iPad"  ){
 	  				// Translate the values to match with Android
 	  				a.x *= -10;
 	  				a.y *= -10;
@@ -179,8 +204,7 @@ dojo.sensor.accelerometer = {
 	  			_lastAcceleration = a;
 	  			
 	  			return;
-	  				
-	  			
+	  
 	  		},function(error){
 	  			return callback.error(error);
 	  		},accel_options);
@@ -190,3 +214,8 @@ dojo.sensor.accelerometer = {
 	
 }
 )();
+
+
+
+
+}
