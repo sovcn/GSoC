@@ -1,12 +1,3 @@
-/*
-	Copyright (c) 2004-2009, The Dojo Foundation All Rights Reserved.
-	Available via Academic Free License >= 2.1 OR the modified BSD license.
-	see: http://dojotoolkit.org/license for details
-*/
-
-
-if(!dojo._hasResource["dojo.sensor.geolocation"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
-dojo._hasResource["dojo.sensor.geolocation"] = true;
 dojo.require("dojo.sensor");
 dojo.provide("dojo.sensor.geolocation");
 
@@ -19,7 +10,8 @@ dojo.sensor.geolocation = {
 =====*/
 
 (function(){
-
+	
+	var jilWatch = false;  // Bolean value to determine whether a JIL watchPosition has been initiated
 	var geolocationWatchId = []; // Keep track of the various watch ids
 	
 	var handleError = function(/*Object*/ error, /*Boolean*/ browser_supported){
@@ -49,7 +41,15 @@ dojo.sensor.geolocation = {
 		//		Stops the watchPosition function from looking for changes in the user's location.
 		//	watchId: Integer
 		//		A unique identifier for each watchPosition loop.
-		navigator.geolocation.clearWatch(watchId);
+		
+		// Clear W3C watches
+		if(watchId){
+			navigator.geolocation.clearWatch(watchId);
+		}
+		
+		// Clear all JIL watches
+		jilWatch = false;
+		dojo.byId('info').innerHTML += 'clear';
 	}
 	
 	dojo.sensor.geolocation.watchPosition = function(/*Function*/callback, /*Object*/ options){
@@ -82,7 +82,11 @@ dojo.sensor.geolocation = {
 		}else{
 			options = {
 				watchPosition: true
-			}
+			};
+		}
+		
+		if( dojo.sensor.getPlatform() == dojo.sensor.platforms.JIL ){
+			jilWatch = true;
 		}
 		
 		// Keep track of the watch_id value for later use.
@@ -124,6 +128,8 @@ dojo.sensor.geolocation = {
 		//			when the user's browser does not support geolocation.  If this is not passed and the browser is not supported,
 		//			an error will be generated instead.
 			
+			dojo.byId('info').innerHTML += 'starting another';
+		
 	        var location_support;
 			
 			if( typeof(callback.success) != 'function' ){
@@ -138,7 +144,7 @@ dojo.sensor.geolocation = {
 				callback.error = function() {};
 			}
 			
-	        if(navigator.geolocation){
+	        if(navigator.geolocation || dojo.sensor.getPlatform() == dojo.sensor.platforms.JIL){
 				
 	            // Browser is capable of geolocation
 	            location_support = true;
@@ -153,7 +159,8 @@ dojo.sensor.geolocation = {
 						timeout: options.timeout, // Long
 						maximumAge: options.maximumAge, // Long
 						getHeading: options.getHeading, // Boolean
-						onHeadingChange: options.onHeadingChange // Callback function for when the heading changes "significantly"
+						onHeadingChange: options.onHeadingChange, // Callback function for when the heading changes "significantly"
+						frequency: options.frequency
 					}
 				}else{
 					// If no options have been specified, initalize the position options to be passed to
@@ -161,60 +168,119 @@ dojo.sensor.geolocation = {
 					var position_options = {};
 				}
 				
+				// Default success function
+				var success = function(position){
+					if(position_options.getHeading){
+				    	position.coords.simpleHeading = Math.round(position.coords.heading/45 + 1);
+				    	if( position.coords.simpleHeading >= 9 ){
+				    		position.coords.simpleHeading = 1;
+				    	}
+				    	
+				    	if( typeof(position_options.onHeadingChange) == "function" && dojo.sensor.geolocation.last_heading != null 
+			    				&& position.coords.simpleHeading != dojo.sensor.geolocation.last_heading){
+				    		position_options.onHeadingChange(position.coords.simpleHeading);
+				    	}
+				    }
+					
+					callback.success(position, false); // Callback Function
+					
+					dojo.sensor.geolocation.last_heading = position.coords.simpleHeading; // Keep track of the last heading for callback function
+					
+					return;
+				};
+				
+				// Define default error function
+				var err = function(error){
+					handleError(error, location_support);
+					
+					return callback.error(error, location_support); // Error Callback Function
+				};
+				
+				// Determine whether watch or get should be used
 				if (options && options.watchPosition) {
 					// watchPosition was called.  Implement geolocation.watchPosition
-					var watch_id = navigator.geolocation.watchPosition(function(position){
-						alert('yep');
-						if(position_options.getHeading){
-					    	position.coords.simpleHeading = Math.round(position.coords.heading/45 + 1);
-					    	if( position.coords.simpleHeading >= 9 ){
-					    		position.coords.simpleHeading = 1;
-					    	}
-					    	
-					    	if( typeof(position_options.onHeadingChange) == "function" && dojo.sensor.geolocation.last_heading != null 
-				    				&& position.coords.simpleHeading != dojo.sensor.geolocation.last_heading){
-					    		position_options.onHeadingChange(position.coords.simpleHeading);
-					    	}
-					    }
+					if( dojo.sensor.getPlatform() == dojo.sensor.platforms.JIL ){
 						
-						callback.success(position, false); // Callback Function
+						Widget.Device.DeviceStateInfo.onPositionRetrieved = function(loc, method){
+							
+							if( !loc.latitude && !loc.longitude ){
+								var error = dojo.sensor.error;
+								error.code = error.POSITION_UNAVAILABLE;
+								error.message = "Error: Unable to find location."
+								return err(error, true);
+							}
+							
+							var pos = {
+									coords: {
+										latitude: loc.latitude,
+										longitude: loc.longitude,
+										altitude: loc.altitude,
+										accuracy: loc.accuracy,
+										altitudeAccuracy: loc.altitudeAccuracy,
+										heading: null, // North
+										speed: null // Not moving
+									},
+									timestamp: loc.timestamp
+								};
+							
+							
+							success(pos);
+							
+							if( position_options.frequency == undefined ){
+								position_options.frequency = 1000;
+							}
+							// Timeout
+							position_options.watchPosition = true;
+							
+							if( jilWatch == true ){
+								dojo.byId('info').innerHTML += 'DO ANOTHER';
+								setTimeout(dojo.sensor.geolocation.getPosition(callback, position_options), position_options.frequency);
+							}
+							else{
+								dojo.byId('info').innerHTML += 'Dont do another';
+							}
+						};
 						
-						dojo.sensor.geolocation.last_heading = position.coords.simpleHeading; // Keep track of the last heading for callback function
+						Widget.Device.DeviceStateInfo.requestPositionInfo("gps");
 						
-						return;
-					},function(error){
-						alert('watch');
-						handleError(error, location_support);
-						return callback.error(error, location_support); // Error Callback Function
-					}, position_options);
+					}else{
+						// W3C Implementation
+						var watch_id = navigator.geolocation.watchPosition(success, err, position_options);
+					}
 					return watch_id;
 				}else {
 					// watchPosition was not called.  Implement geolocation.getCurrentPosition
-					console.log("navigator.geolocation.getCurrentPosition()");
-					navigator.geolocation.getCurrentPosition(function(position){
+					if( dojo.sensor.getPlatform() == dojo.sensor.platforms.JIL ){
 						
-					    if(position_options.getHeading){
-					    	position.coords.simpleHeading = Math.round(position.coords.heading/45 + 1);
-					    	if( position.coords.simpleHeading >= 9 ){
-					    		position.coords.simpleHeading = 1;
-					    	}
-					    	
-					    	if( typeof(position_options.onHeadingChange) == "function" && dojo.sensor.geolocation.last_heading != null 
-					    				&& position.coords.simpleHeading != dojo.sensor.geolocation.last_heading){
-					    		position_options.onHeadingChange(position.coords.simpleHeading);
-					    	}
-					    }
+							Widget.Device.DeviceStateInfo.onPositionRetrieved = function(loc, method){
+								
+								if( !loc.latitude && !loc.longitude ){
+									var error = dojo.sensor.error;
+									error.code = error.POSITION_UNAVAILABLE;
+									error.message = "Error: Unable to find location."
+									return err(error, true);
+								}
+								
+								var pos = {
+										coords: {
+											latitude: loc.latitude,
+											longitude: loc.longitude,
+											altitude: loc.altitude,
+											accuracy: loc.accuracy,
+											altitudeAccuracy: loc.altitudeAccuracy,
+											heading: null, // North
+											speed: null // Not moving
+										},
+										timestamp: loc.timestamp
+									};
+								success(pos);
+							};
+							
+							Widget.Device.DeviceStateInfo.requestPositionInfo("gps");
 						
-						callback.success(position, false); // Callback Function
-						
-						dojo.sensor.geolocation.last_heading = position.coords.simpleHeading; // Keep track of the last heading for callback function
-						
-						return;
-					}, function(error){
-						handleError(error, location_support);
-						
-						return callback.error(error, location_support); // Error Callback Function
-					}, position_options);
+					}else{
+						navigator.geolocation.getCurrentPosition(success, err, position_options);
+					}
 				}
 				
 	        }else if( dojo.gears.available ){ // google.gears ){
@@ -275,5 +341,3 @@ dojo.sensor.geolocation = {
 	    }
 	    
 })();
-
-}

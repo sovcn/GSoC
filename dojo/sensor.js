@@ -1,18 +1,11 @@
-/*
-	Copyright (c) 2004-2009, The Dojo Foundation All Rights Reserved.
-	Available via Academic Free License >= 2.1 OR the modified BSD license.
-	see: http://dojotoolkit.org/license for details
-*/
 
-
-if(!dojo._hasResource["dojo.sensor"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
-dojo._hasResource["dojo.sensor"] = true;
 dojo.provide("dojo.sensor");
 
 dojo.sensor = {
 		platforms: {
 			NATIVE: 1,
-			PHONE_GAP: 2
+			PHONE_GAP: 2,
+			JIL: 3
 		},
 		error: {
 			PERMISSION_DENIED: 1,
@@ -43,12 +36,10 @@ dojo.sensor = {
 		// summary:
 		//		Run a check to find out which platform is being loaded
 	if( typeof(PhoneGap) == "object" ){
-
 		dojo.sensor._platform = dojo.sensor.platforms.PHONE_GAP;
+	}else if( typeof(Widget) == "object" ){
+		dojo.sensor._platform = dojo.sensor.platforms.JIL;
 	}else{
 		// No change, defaults to native.
-
 	}
 
-
-}
