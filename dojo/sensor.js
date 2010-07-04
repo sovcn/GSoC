@@ -1,6 +1,3 @@
-
-dojo.provide("dojo.sensor");
-
 dojo.sensor = {
 		platforms: {
 			NATIVE: 1,
@@ -30,16 +27,20 @@ dojo.sensor = {
 		}
 	};
 
-	dojo.sensor._loaded = true;
 	dojo.sensor._platform = dojo.sensor.platforms.NATIVE; // Defaults to native
 
+	dojo.addOnLoad(function(){
+		dojo.sensor._loaded = true;
+		
+		if( typeof(PhoneGap) == "object" ){
+			dojo.sensor._platform = dojo.sensor.platforms.PHONE_GAP;
+		}else if( typeof(Widget) == "object" ){
+			dojo.sensor._platform = dojo.sensor.platforms.JIL;
+		}else{
+			// No change, defaults to native.
+		}
+
+	});
 		// summary:
 		//		Run a check to find out which platform is being loaded
-	if( typeof(PhoneGap) == "object" ){
-		dojo.sensor._platform = dojo.sensor.platforms.PHONE_GAP;
-	}else if( typeof(Widget) == "object" ){
-		dojo.sensor._platform = dojo.sensor.platforms.JIL;
-	}else{
-		// No change, defaults to native.
-	}
 

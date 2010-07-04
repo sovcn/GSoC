@@ -38,7 +38,9 @@ dojo.sensor.accelerometer = {
 	var _timer = undefined; // Keeps track of the interval timer for the watch so that it can be cleared later if need be.
 	
 	var _initShake = false; // Keeps track of whether or not a shake has been initiated. Used to prevent multiple shakes (debounces shake)
-
+	
+	var jilWatch = false;  // Bolean value to determine whether a JIL watchAcceleration has been initiated
+	var jilClear = false; // Determines whether JIL watchAcceleration was just cleared
 	
 	var determineOrientation = function(/*Acceleration Object*/ a){
 		// summary:
@@ -110,6 +112,16 @@ dojo.sensor.accelerometer = {
 		
 	}
 	
+	dojo.sensor.accelerometer.clearWatch = function(/*Integer*/ watchId){
+		if(watchId){
+			clearInterval(watchId);
+		}
+		
+		// Clear all JIL watches
+		jilWatch = false;
+		jilClear = true;
+	}
+	
 	dojo.sensor.accelerometer.watchAcceleration = function(/*Object*/ callback, /*Object*/ options){
 		// summary:
 		//		Implements the W3C accelerometer method of the same name using one of the following platforms: (Native or Phonegap).
@@ -126,6 +138,9 @@ dojo.sensor.accelerometer = {
 		//		orientationChange: Function
 		//			called whenever the device switches between orientations (Portrait and Landscape) as determined by the
 		//			determineOrientation private method.
+		
+		
+		
 		if ( dojo.sensor.getPlatform() == dojo.sensor.platforms.NATIVE) {
 			error = dojo.sensor.error;
 			error.code = error.UNSUPPORTED_FEATURE;
@@ -155,10 +170,9 @@ dojo.sensor.accelerometer = {
 				accel_options = {};
 			}
 			
-			// Implement PhoneGaps implementation of the W3C accelerometer API
-	  		_timer = navigator.accelerometer.watchAcceleration(function(a){
-	  			
-	  			var blockShake = false;  // Temp value .. goes out of scope
+			/* Function to handle, manipulate, and analyze accelerometer data */
+			var success = function(a){
+				var blockShake = false;  // Temp value .. goes out of scope
 	  			
 	  			if( accel_options.getOrientation == true ){
 		  			var prevOrientation = _orientation;
@@ -183,8 +197,8 @@ dojo.sensor.accelerometer = {
 	  			_firstAcceleration = false;
 	  			
 	  			if( dojo.sensor.getPlatform() == dojo.sensor.platforms.PHONE_GAP && // Must be phonegap to use device object
-	  							device.platform == "iPod touch" || device.platform == "iPhone" || device.platform == "iPad"  ){
-	  				// Translate the values to match with Android
+	  							(device.platform == "iPod touch" || device.platform == "iPhone" || device.platform == "iPad")  ){
+	  				// Translate the iOS values to match with Android/W3C
 	  				a.x *= -10;
 	  				a.y *= -10;
 	  				a.z *= -10;
@@ -195,15 +209,63 @@ dojo.sensor.accelerometer = {
 	  			_lastAcceleration = a;
 	  			
 	  			return;
-	  
-	  		},function(error){
-	  			return callback.error(error);
-	  		},accel_options);
+			}
+			
+			var err = function(error){
+				return callback.error(error);
+			}
+			
+			if( dojo.sensor.getPlatform() == dojo.sensor.platforms.JIL ){
+				// JIL implementation of accelerometer
+				jilWatch = true;
+				
+				if( jilClear ){
+					jilWatch = false;
+					jilClear = false;
+					return;
+				}
+				
+				var a = {
+					x: Widget.Device.DeviceStateInfo.AccelerometerInfo.xAxis,
+					y: Widget.Device.DeviceStateInfo.AccelerometerInfo.yAxis,
+					z: Widget.Device.DeviceStateInfo.AccelerometerInfo.zAxis
+				}
+				
+				if( a.x && a.y ){
+					success(a);
+					if( jilWatch ){
+						setTimeout(function(){dojo.sensor.accelerometer.watchAcceleration(callback, options)}, accel_options.frequency);
+					}
+					return;
+				}else{
+					error = dojo.sensor.error;
+					error.code = error.POSITION_UNAVAILABE;
+					error.message = "Error: Unable to retrieve JIL accelerometer data.";
+					err(error);
+					return;
+				}
+				// End Jill Implementation
+				
+			}else{
+				// PhoneGap implementation of the W3C accelerometer API
+		  		_timer = navigator.accelerometer.watchAcceleration(function(a){
+		  			
+		  			success(a);
+		  			
+		  			return;
+		  
+		  		},function(error){
+		  			
+		  			err(error);
+		  			
+		  			return ;
+		  			
+		  		},accel_options);
+		  		/* End Phonegap Implementation */
+			}
 			
 		}
 	}
 	
 }
 )();
-
-

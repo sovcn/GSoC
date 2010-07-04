@@ -49,7 +49,6 @@ dojo.sensor.geolocation = {
 		
 		// Clear all JIL watches
 		jilWatch = false;
-		dojo.byId('info').innerHTML += 'clear';
 	}
 	
 	dojo.sensor.geolocation.watchPosition = function(/*Function*/callback, /*Object*/ options){
@@ -128,7 +127,6 @@ dojo.sensor.geolocation = {
 		//			when the user's browser does not support geolocation.  If this is not passed and the browser is not supported,
 		//			an error will be generated instead.
 			
-			dojo.byId('info').innerHTML += 'starting another';
 		
 	        var location_support;
 			
@@ -210,22 +208,11 @@ dojo.sensor.geolocation = {
 								return err(error, true);
 							}
 							
-							var pos = {
-									coords: {
-										latitude: loc.latitude,
-										longitude: loc.longitude,
-										altitude: loc.altitude,
-										accuracy: loc.accuracy,
-										altitudeAccuracy: loc.altitudeAccuracy,
-										heading: null, // North
-										speed: null // Not moving
-									},
-									timestamp: loc.timestamp
-								};
+							var pos = packageJilLocation(loc);
 							
-							
+
 							success(pos);
-							
+
 							if( position_options.frequency == undefined ){
 								position_options.frequency = 1000;
 							}
@@ -233,14 +220,13 @@ dojo.sensor.geolocation = {
 							position_options.watchPosition = true;
 							
 							if( jilWatch == true ){
-								dojo.byId('info').innerHTML += 'DO ANOTHER';
-								setTimeout(dojo.sensor.geolocation.getPosition(callback, position_options), position_options.frequency);
+								setTimeout('Widget.Device.DeviceStateInfo.requestPositionInfo("gps")', position_options.frequency);
 							}
 							else{
-								dojo.byId('info').innerHTML += 'Dont do another';
+								// No timeout.  Last update
 							}
+					
 						};
-						
 						Widget.Device.DeviceStateInfo.requestPositionInfo("gps");
 						
 					}else{
@@ -254,25 +240,18 @@ dojo.sensor.geolocation = {
 						
 							Widget.Device.DeviceStateInfo.onPositionRetrieved = function(loc, method){
 								
+								/* JIL error handling */
 								if( !loc.latitude && !loc.longitude ){
 									var error = dojo.sensor.error;
 									error.code = error.POSITION_UNAVAILABLE;
-									error.message = "Error: Unable to find location."
+									error.message = "Error: Unable to find location.";
 									return err(error, true);
 								}
 								
-								var pos = {
-										coords: {
-											latitude: loc.latitude,
-											longitude: loc.longitude,
-											altitude: loc.altitude,
-											accuracy: loc.accuracy,
-											altitudeAccuracy: loc.altitudeAccuracy,
-											heading: null, // North
-											speed: null // Not moving
-										},
-										timestamp: loc.timestamp
-									};
+								// Convert JIL locationInfo into W3C position object.
+								var pos = packageJilLocation(loc);
+								
+								// success callback function
 								success(pos);
 							};
 							
@@ -339,5 +318,24 @@ dojo.sensor.geolocation = {
 				}
 	        }
 	    }
+	
+	function packageJilLocation(/*JIL locationInfo*/ loc){
+		// summary: packages a JIL locationInfo object into a W3C position object
+		
+		var pos = {
+				coords: {
+					latitude: loc.latitude,
+					longitude: loc.longitude,
+					altitude: loc.altitude,
+					accuracy: loc.accuracy,
+					altitudeAccuracy: loc.altitudeAccuracy,
+					heading: null, // North
+					speed: null // Not moving
+				},
+				timestamp: loc.timestamp
+			};
+		return pos;
+		
+	}
 	    
 })();
