@@ -34,6 +34,7 @@ dojo.sensor.geolocation = {
 			last_heading: null
 	};
 	
+	
 	dojo.sensor.geolocation.clearWatch = function(/*Integer*/ watchId){
 		// summary:
 		//		Wrapper function for the W3C implementation.

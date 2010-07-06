@@ -1,4 +1,4 @@
-dojo.require('dojo.sensor');
+
 dojo.provide("dojo.sensor.media");
 
 /*=====
@@ -97,3 +97,4 @@ if( dojo.sensor.isLoaded() && dojo.sensor.getPlatform() == dojo.sensor.platforms
 		
 	})();
 } // end else
+
