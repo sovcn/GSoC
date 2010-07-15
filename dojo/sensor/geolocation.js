@@ -1,7 +1,7 @@
 dojo.require("dojo.sensor");
 dojo.provide("dojo.sensor.geolocation");
 
-dojo.require("dojo.gears");
+//dojo.require("dojo.gears");
 /*=====
 dojo.sensor.geolocation = { 
   // summary:
@@ -19,6 +19,18 @@ dojo.sensor.geolocation = {
         //alert('An Error Occured: code' + error.code);
 		// This function is called in conjunction with an error callback function.  May be overridden and used for additional error handling.
 		
+	}
+	
+	var determineSupport = function(){
+		var platform = dojo.sensor.getPlatform();
+		var platforms = dojo.sensor.platforms;
+		if( platform == platforms.JIL || platform == platforms.BONDI || navigator.geolocation){
+			// platform is supported
+			return true;
+		}else{
+			// platform is not supported
+			return false;
+		}
 	}
 	
 	// Direction Constants
@@ -127,7 +139,6 @@ dojo.sensor.geolocation = {
 		//			Conforms to the W3C position interface spec. Allows the programmer to specify a default position to be used
 		//			when the user's browser does not support geolocation.  If this is not passed and the browser is not supported,
 		//			an error will be generated instead.
-			
 		
 	        var location_support;
 			
@@ -143,8 +154,9 @@ dojo.sensor.geolocation = {
 				callback.error = function() {};
 			}
 			
-	        if(navigator.geolocation || dojo.sensor.getPlatform() == dojo.sensor.platforms.JIL){
-				
+			
+			
+	        if( determineSupport() ){
 	            // Browser is capable of geolocation
 	            location_support = true;
 				
@@ -152,6 +164,12 @@ dojo.sensor.geolocation = {
 				// the W3C spec.
 				// Abritrary key values can also be passed with options.  Unused option values will be
 				// ignored.
+	            
+	            // BONDI FIX
+	            if( dojo.sensor.getPlatform() == dojo.sensor.platforms.BONDI && !options.enableHighAccuracy ){
+	            	options.enableHighAccuracy = true; // Default to true;
+	            }
+	            
 				if (options) {
 					var position_options = {
 						enableHighAccuracy: options.enableHighAccuracy, // Boolean
@@ -160,7 +178,7 @@ dojo.sensor.geolocation = {
 						getHeading: options.getHeading, // Boolean
 						onHeadingChange: options.onHeadingChange, // Callback function for when the heading changes "significantly"
 						frequency: options.frequency
-					}
+					};
 				}else{
 					// If no options have been specified, initalize the position options to be passed to
 					// the geolocation functions to null to ensure proper parameter initilization.
@@ -169,6 +187,7 @@ dojo.sensor.geolocation = {
 				
 				// Default success function
 				var success = function(position){
+					
 					if(position_options.getHeading){
 				    	position.coords.simpleHeading = Math.round(position.coords.heading/45 + 1);
 				    	if( position.coords.simpleHeading >= 9 ){
@@ -198,48 +217,54 @@ dojo.sensor.geolocation = {
 				// Determine whether watch or get should be used
 				if (options && options.watchPosition) {
 					// watchPosition was called.  Implement geolocation.watchPosition
-					if( dojo.sensor.getPlatform() == dojo.sensor.platforms.JIL ){
+					switch( dojo.sensor.getPlatform() ){
+						case dojo.sensor.platforms.JIL:
+							Widget.Device.DeviceStateInfo.onPositionRetrieved = function(loc, method){
+							
+								if( !loc.latitude && !loc.longitude ){
+									var error = dojo.sensor.error;
+									error.code = error.POSITION_UNAVAILABLE;
+									error.message = "Error: Unable to find location."
+									return err(error, true);
+								}
+								
+								var pos = packageJilLocation(loc);
+								
+	
+								success(pos);
+	
+								if( position_options.frequency == undefined ){
+									position_options.frequency = 1000;
+								}
+								// Timeout
+								position_options.watchPosition = true;
+								
+								if( jilWatch == true ){
+									setTimeout('Widget.Device.DeviceStateInfo.requestPositionInfo("gps")', position_options.frequency);
+								}
+								else{
+									// No timeout.  Last update
+								}
 						
-						Widget.Device.DeviceStateInfo.onPositionRetrieved = function(loc, method){
-							
-							if( !loc.latitude && !loc.longitude ){
-								var error = dojo.sensor.error;
-								error.code = error.POSITION_UNAVAILABLE;
-								error.message = "Error: Unable to find location."
-								return err(error, true);
-							}
-							
-							var pos = packageJilLocation(loc);
-							
-
-							success(pos);
-
-							if( position_options.frequency == undefined ){
-								position_options.frequency = 1000;
-							}
-							// Timeout
-							position_options.watchPosition = true;
-							
-							if( jilWatch == true ){
-								setTimeout('Widget.Device.DeviceStateInfo.requestPositionInfo("gps")', position_options.frequency);
-							}
-							else{
-								// No timeout.  Last update
-							}
-					
-						};
-						Widget.Device.DeviceStateInfo.requestPositionInfo("gps");
+							};
+							Widget.Device.DeviceStateInfo.requestPositionInfo("gps");
 						
-					}else{
-						// W3C Implementation
-						var watch_id = navigator.geolocation.watchPosition(success, err, position_options);
+						break;
+						case dojo.sensor.platforms.BONDI:
+							
+						break;
+						default:
+							// W3C Implementation
+							var watch_id = navigator.geolocation.watchPosition(success, err, position_options);
+					    break;
 					}
 					return watch_id;
 				}else {
 					// watchPosition was not called.  Implement geolocation.getCurrentPosition
-					if( dojo.sensor.getPlatform() == dojo.sensor.platforms.JIL ){
-						
-							Widget.Device.DeviceStateInfo.onPositionRetrieved = function(loc, method){
+					
+					switch( dojo.sensor.getPlatform() ){
+						case dojo.sensor.platforms.JIL:
+								Widget.Device.DeviceStateInfo.onPositionRetrieved = function(loc, method){
 								
 								/* JIL error handling */
 								if( !loc.latitude && !loc.longitude ){
@@ -250,7 +275,7 @@ dojo.sensor.geolocation = {
 								}
 								
 								// Convert JIL locationInfo into W3C position object.
-								var pos = packageJilLocation(loc);
+								var pos = packageJilLocation(locs);
 								
 								// success callback function
 								success(pos);
@@ -258,18 +283,24 @@ dojo.sensor.geolocation = {
 							
 							Widget.Device.DeviceStateInfo.requestPositionInfo("gps");
 						
-					}else{
-						navigator.geolocation.getCurrentPosition(success, err, position_options);
+						break;
+						case dojo.sensor.platforms.BONDI:
+							bondi.geolocation.getCurrentPosition(success, err, position_options);
+						break;
+						default:
+							// W3C Implementation
+							navigator.geolocation.getCurrentPosition(success, err, position_options);
+					    break;
 					}
 				}
 				
-	        }else if( dojo.gears.available ){ // google.gears ){
+	        }else if( false ){//dojo.gears.available ){ // google.gears ){
 	            // Try Google Gears - Fails in Safari... find workaround
 	            location_support = true;
 				alert('using Gears - TODO implement gears support');
 	            // TODO - Implement Gears support
 	        }else{
-	            
+	          
 	            // Browser is incapable of geolocation...
 	            location_support = false;
 				

@@ -4,7 +4,8 @@ dojo.sensor = {
 		platforms: {
 			NATIVE: 1,
 			PHONE_GAP: 2,
-			JIL: 3
+			JIL: 3,
+			BONDI: 4
 		},
 		error: {
 			PERMISSION_DENIED: 1,
@@ -67,10 +68,10 @@ dojo.sensor = {
 			dojo.sensor._platform = dojo.sensor.platforms.PHONE_GAP;
 		}else if( typeof(Widget) == "object" ){
 			dojo.sensor._platform = dojo.sensor.platforms.JIL;
+		}else if( typeof(bondi) == "object" ){
+			dojo.sensor._platform = dojo.sensor.platforms.BONDI;
 		}else{
 			// No change, defaults to native.
 		}
 
 	});
-		// summary:
-		//		Run a check to find out which platform is being loaded
