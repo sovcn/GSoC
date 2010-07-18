@@ -139,9 +139,7 @@ dojo.sensor.accelerometer = {
 		//			called whenever the device switches between orientations (Portrait and Landscape) as determined by the
 		//			determineOrientation private method.
 		
-		
-		
-		if ( dojo.sensor.getPlatform() == dojo.sensor.platforms.NATIVE) {
+		if ( dojo.sensor.getPlatform() == dojo.sensor.platforms.NATIVE ) {
 			error = dojo.sensor.error;
 			error.code = error.UNSUPPORTED_FEATURE;
 			error.message = "Error: Accelerometer is currently not supported on any native platforms.";
@@ -246,7 +244,7 @@ dojo.sensor.accelerometer = {
 				}
 				// End Jill Implementation
 				
-			}else{
+			}else if( dojo.sensor.getPlatform() == dojo.sensor.platforms.PHONE_GAP ){
 				// PhoneGap implementation of the W3C accelerometer API
 		  		_timer = navigator.accelerometer.watchAcceleration(function(a){
 		  			
@@ -262,6 +260,12 @@ dojo.sensor.accelerometer = {
 		  			
 		  		},accel_options);
 		  		/* End Phonegap Implementation */
+			}else{
+				error = dojo.sensor.error;
+				error.code = error.UNSUPPORTED_FEATURE;
+				error.message = "Error: Accelerometer is currently not supported by this platform.";
+				
+				err(error);
 			}
 			
 		}
