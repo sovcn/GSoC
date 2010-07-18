@@ -57,8 +57,13 @@ dojo.sensor.geolocation = {
 		
 		// Clear W3C watches
 		if(watchId){
-			navigator.geolocation.clearWatch(watchId);
+			if( dojo.sensor.getPlatform == dojo.sensor.platforms.BONDI ){
+				bondi.geolocation.clearWatch(watchId);
+			}else{
+				navigator.geolocation.clearWatch(watchId);
+			}
 		}
+		
 		
 		// Clear all JIL watches
 		jilWatch = false;
@@ -251,7 +256,7 @@ dojo.sensor.geolocation = {
 						
 						break;
 						case dojo.sensor.platforms.BONDI:
-							
+							var watch_id = bondi.geolocation.watchPosition(success, err, position_options);
 						break;
 						default:
 							// W3C Implementation

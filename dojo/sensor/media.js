@@ -25,6 +25,12 @@ if( dojo.sensor.isLoaded() && dojo.sensor.getPlatform() == dojo.sensor.platforms
 		
 		dojo.sensor.media.captureImage = function(callback, options){
 			
+			if( dojo.sensor.isLoaded() && dojo.sensor.getPlatform() == dojo.sensor.platforms.NATIVE ){
+				error = dojo.sensor.error;
+				error.code = error.UNSUPPORTED_FEATURE;
+				error.message = "Error: Camera is currently not supported on any native platforms.";
+			}
+			
 			// START OPTIONS
 			
 			if( !options || typeof(options) != "object" ){
@@ -87,15 +93,21 @@ if( dojo.sensor.isLoaded() && dojo.sensor.getPlatform() == dojo.sensor.platforms
 		}
 		
 		dojo.sensor.media.captureVideo = function(callback, options){
-			
+			error = dojo.sensor.error;
+			error.code = error.UNSUPPORTED_FEATURE;
+			error.message = "Error: Function not yet supported.";
 		}
 		
 		dojo.sensor.media.captureAudio = function(callback, options){
-			
+			error = dojo.sensor.error;
+			error.code = error.UNSUPPORTED_FEATURE;
+			error.message = "Error: Function not yet supported.";
 		}
 		
 		dojo.sensor.media.getViewFinder = function(callback, options){
-			
+			error = dojo.sensor.error;
+			error.code = error.UNSUPPORTED_FEATURE;
+			error.message = "Error: Function not yet supported";
 		}
 		
 		// Courtesy of http://stackoverflow.com/questions/934012/get-image-data-in-javascript
