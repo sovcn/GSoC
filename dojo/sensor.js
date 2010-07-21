@@ -5,7 +5,8 @@ dojo.sensor = {
 			NATIVE: 1,
 			PHONE_GAP: 2,
 			JIL: 3,
-			BONDI: 4
+			BONDI: 4,
+			WEBOS: 5
 		},
 		error: {
 			PERMISSION_DENIED: 1,
@@ -70,6 +71,8 @@ dojo.sensor = {
 			dojo.sensor._platform = dojo.sensor.platforms.JIL;
 		}else if( typeof(bondi) == "object" ){
 			dojo.sensor._platform = dojo.sensor.platforms.BONDI;
+		}else if( typeof(Mojo) == "object" ){
+			dojo.sensor._platform = dojo.sensor.platforms.WEBOS;
 		}else{
 			// No change, defaults to native.
 		}

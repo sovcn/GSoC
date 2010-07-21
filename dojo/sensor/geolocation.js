@@ -24,7 +24,7 @@ dojo.sensor.geolocation = {
 	var determineSupport = function(){
 		var platform = dojo.sensor.getPlatform();
 		var platforms = dojo.sensor.platforms;
-		if( platform == platforms.JIL || platform == platforms.BONDI || navigator.geolocation){
+		if( platform == platforms.JIL || platform == platforms.BONDI || navigator.geolocation || platform = platforms.WEBOS ){
 			// platform is supported
 			return true;
 		}else{
@@ -144,6 +144,7 @@ dojo.sensor.geolocation = {
 		//			Conforms to the W3C position interface spec. Allows the programmer to specify a default position to be used
 		//			when the user's browser does not support geolocation.  If this is not passed and the browser is not supported,
 		//			an error will be generated instead.
+		
 		
 	        var location_support;
 			
@@ -291,6 +292,10 @@ dojo.sensor.geolocation = {
 						break;
 						case dojo.sensor.platforms.BONDI:
 							bondi.geolocation.getCurrentPosition(success, err, position_options);
+						break;
+						case dojo.sensor.platforms.WEBOS:
+							this.controller.get("app-version").update('trying');
+							callback.success();
 						break;
 						default:
 							// W3C Implementation
