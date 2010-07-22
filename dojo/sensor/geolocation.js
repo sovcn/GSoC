@@ -24,7 +24,7 @@ dojo.sensor.geolocation = {
 	var determineSupport = function(){
 		var platform = dojo.sensor.getPlatform();
 		var platforms = dojo.sensor.platforms;
-		if( platform == platforms.JIL || platform == platforms.BONDI || navigator.geolocation || platform = platforms.WEBOS ){
+		if( platform == platforms.JIL || platform == platforms.BONDI || navigator.geolocation || platform == platforms.WEBOS ){
 			// platform is supported
 			return true;
 		}else{
@@ -145,7 +145,7 @@ dojo.sensor.geolocation = {
 		//			when the user's browser does not support geolocation.  If this is not passed and the browser is not supported,
 		//			an error will be generated instead.
 		
-		
+			
 	        var location_support;
 			
 			if( typeof(callback.success) != 'function' ){
@@ -159,7 +159,6 @@ dojo.sensor.geolocation = {
 			if( typeof(callback.error) != 'function' ){
 				callback.error = function() {};
 			}
-			
 			
 			
 	        if( determineSupport() ){
@@ -190,7 +189,6 @@ dojo.sensor.geolocation = {
 					// the geolocation functions to null to ensure proper parameter initilization.
 					var position_options = {};
 				}
-				
 				// Default success function
 				var success = function(position){
 					
@@ -219,6 +217,19 @@ dojo.sensor.geolocation = {
 					
 					return callback.error(error, location_support); // Error Callback Function
 				};
+				
+				var WebOSGpsSuccess = function(event){
+					options.assistant.controller.get("app-id").update('amazing');
+					var position = packageWebOSLocation(event);
+					position.assistant = options.assistant; // Add in the webOS assistant
+														    // so that the callback function may utilize it.
+					success(position);
+				}
+				
+				var WebOSGpsFailure = function(event){
+					var error = handleWebOSError(event);
+					err(error); // Error callback
+				}
 				
 				// Determine whether watch or get should be used
 				if (options && options.watchPosition) {
@@ -259,6 +270,29 @@ dojo.sensor.geolocation = {
 						case dojo.sensor.platforms.BONDI:
 							var watch_id = bondi.geolocation.watchPosition(success, err, position_options);
 						break;
+						case dojo.sensor.platforms.WEBOS:
+							// Make sure that the webOS assistant was passed as it is necessary.
+							if( !options.assistant ){
+								error = dojo.sensor.error;
+								error.code = error.IMPROPER_IMPLEMENTATION;
+								error.message = "Error: webOS requires that you pass the current assistant object as a property of the options parameter.";
+								
+								handleError(error, location_support);
+								return callback.error(error, location_support);
+							}
+							
+							
+							
+							options.assistant.controller.serviceRequest('palm://com.palm.location', {
+							    method:"getCurrentPosition",
+							    parameters:{},
+							    onSuccess:WebOSGpsSuccess.bind(options.assistant),
+							    onFailure:WebOSGpsFailure.bind(options.assistant)
+							    }
+							);
+							options.assistant.controller.get("app-title").update('fail');
+
+						break;
 						default:
 							// W3C Implementation
 							var watch_id = navigator.geolocation.watchPosition(success, err, position_options);
@@ -294,8 +328,30 @@ dojo.sensor.geolocation = {
 							bondi.geolocation.getCurrentPosition(success, err, position_options);
 						break;
 						case dojo.sensor.platforms.WEBOS:
-							this.controller.get("app-version").update('trying');
-							callback.success();
+							// Make sure that the webOS assistant was passed as it is necessary.
+							if( !options.assistant ){
+								error = dojo.sensor.error;
+								error.code = error.IMPROPER_IMPLEMENTATION;
+								error.message = "Error: webOS requires that you pass the current assistant object as a property of the options parameter.";
+								
+								handleError(error, location_support);
+								return callback.error(error, location_support);
+							}
+							
+							
+							
+							options.assistant.controller.serviceRequest('palm://com.palm.location', {
+							    method:"getCurrentPosition",
+							    parameters:{},
+							    onSuccess:WebOSGpsSuccess.bind(options.assistant),
+							    onFailure:WebOSGpsFailure.bind(options.assistant)
+							    }
+							);
+							options.assistant.controller.get("app-title").update('fail');
+							
+							/*options.assistant.controller.get("app-id").update('testing' + callback.success);
+							callback.success(options.assistant);
+							options.assistant.controller.get("app-id").update('done');*/
 						break;
 						default:
 							// W3C Implementation
@@ -361,9 +417,8 @@ dojo.sensor.geolocation = {
 	        }
 	    }
 	
-	function packageJilLocation(/*JIL locationInfo*/ loc){
-		// summary: packages a JIL locationInfo object into a W3C position object
-		
+	function packageGenericLocation(/*Generic Info*/ loc){
+		// Package a generic location object that doesn't use the W3C coord property.
 		var pos = {
 				coords: {
 					latitude: loc.latitude,
@@ -371,13 +426,55 @@ dojo.sensor.geolocation = {
 					altitude: loc.altitude,
 					accuracy: loc.accuracy,
 					altitudeAccuracy: loc.altitudeAccuracy,
-					heading: null, // North
-					speed: null // Not moving
+					heading: loc.heading, // North
+					speed: loc.speed // Not moving
 				},
 				timestamp: loc.timestamp
 			};
 		return pos;
 		
+	}
+	
+	function packageJilLocation(/*JIL locationInfo*/ loc){
+		// summary: packages a JIL locationInfo object into a W3C position object
+		
+		var pos = packageGenericLocation(loc);
+		return pos;
+		
+	}
+	
+	function packageWebOSLocation(/*WebOS Location Information*/ loc){
+		var pos = packageGenericLocation(loc);
+		
+		// Package WebOS specific properties
+		pos.coords.speed = loc.velocity;
+		pos.coords.horizAccuracy = loc.horizAccuracy;
+		pos.coords.vertAccuracy = loc.vertAccuracy;
+		
+		return pos;
+	}
+	
+	function handleWebOSError(/*Integer*/ errorCode){
+		var error = dojo.sensor.error;
+		
+		if( errorCode == 0 ){
+			return false; // No error
+		}
+		
+		var codes = [true, {'code': error.POSITION_UNAVAILABLE, 'message': 'Error: The application timed out waiting for the position.'},
+		             	   {'code': error.POSITION_UNAVAILABLE, 'message': 'Error: The current position is unavailable.'},
+		             	   {'code': error.APPLICATION_ERROR, 'message': 'Error: An unknown error has occured.'},
+		             	   {'code': error.POSITION_UNAVAILABLE, 'message': 'Error: GPS is permantently unavailable.'},
+		             	   {'code': error.DEVICE_ERROR, 'message': 'Error: No Location source available. Both Google and GPS are off.'},
+		             	   {'code': error.PERMISSION_DENIED, 'message': 'Error: The user has not accepted the terms of use for the Google Location Service, or the Google Service is off.'},
+		             	   {'code': error.APPLICATION_ERROR, 'message': 'Error: A pending location request already exists.'},
+		             	   {'code': error.APPLICATION_ERROR, 'message': 'Error: The application has been temporarily blacklisted.'}];
+		var webOSErr = codes[errorCode];
+		
+		error.code = webOSErr.code;
+		error.message = webOSErr.message;
+		
+		return error;            
 	}
 	    
 })();
