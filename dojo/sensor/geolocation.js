@@ -192,6 +192,34 @@ dojo.sensor.geolocation = {
 					// the geolocation functions to null to ensure proper parameter initilization.
 					var position_options = {};
 				}
+				
+				if( dojo.sensor.getPlatform() == dojo.sensor.platforms.WEBOS ){
+					// Attempt to translate webOS geolocation parameters to match the W3C spec.
+					
+					if( !options.responseTime && options.timeout){
+						if( options.timeout > 20000 ){
+							options.responseTime = 3;
+						}else if( options.timeout <= 20000 && options.timeout > 5000 ){
+							options.responseTime = 2;
+						}else{
+							options.responseTime = 1;
+						}
+					}else{
+						options.responseTime = 2; // Default to 5-20 seconds.
+					}
+					
+					if( !options.accuracy ){
+						options.accuracy = 2; // Default to 350 meters or less.
+					}
+					
+					if( options.enableHighAccuracy ){
+						options.accuracy = 1; // Translate W3C enableHighAccuracy to webOS accuracy
+					}
+					
+					if( options.maximumAge ){
+						options.maximumAge = options.maximumAge/1000;  // Convert W3C maximumAge value(milliseconds) to webOS value(seconds)
+					}
+				}
 				// Default success function
 				var success = function(position){
 					
