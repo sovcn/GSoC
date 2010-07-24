@@ -47,18 +47,21 @@ dojo.sensor.geolocation = {
 	};
 	
 	
-	dojo.sensor.geolocation.clearWatch = function(/*Integer*/ watchId){
+	dojo.sensor.geolocation.clearWatch = function(/*Mixed*/ watchId){
 		// summary:
-		//		Wrapper function for the W3C implementation.
+		//		Wrapper function for the W3C implementation. Emulates W3C functionality for other supported platforms.
 		//	description:
-		//		Stops the watchPosition function from looking for changes in the user's location.
-		//	watchId: Integer
-		//		A unique identifier for each watchPosition loop.
+		//		Stops the watchPosition function from monitoring changes in the user's location.
+		//	watchId: Mixed
+		//		Could be either an Integer value (W3C and Bondi) or an object (Palm WebOS). The API will
+		//		dynamically determine which has been used and perform the necessary actions accordingly.
 		
 		// Clear W3C watches
 		if(watchId){
-			if( dojo.sensor.getPlatform == dojo.sensor.platforms.BONDI ){
+			if( dojo.sensor.getPlatform() == dojo.sensor.platforms.BONDI ){
 				bondi.geolocation.clearWatch(watchId);
+			}else if( dojo.sensor.getPlatform() == dojo.sensor.platforms.WEBOS){
+				watchId.cancel(); // Cancel webOS service subscription.
 			}else{
 				navigator.geolocation.clearWatch(watchId);
 			}
@@ -219,15 +222,14 @@ dojo.sensor.geolocation = {
 				};
 				
 				var WebOSGpsSuccess = function(event){
-					options.assistant.controller.get("app-id").update('amazing');
 					var position = packageWebOSLocation(event);
 					position.assistant = options.assistant; // Add in the webOS assistant
-														    // so that the callback function may utilize it.
+															// so that the callback function may utilize it.
 					success(position);
 				}
 				
 				var WebOSGpsFailure = function(event){
-					var error = handleWebOSError(event);
+					var error = handleWebOSError(event.errorCode);
 					err(error); // Error callback
 				}
 				
@@ -283,14 +285,13 @@ dojo.sensor.geolocation = {
 							
 							
 							
-							options.assistant.controller.serviceRequest('palm://com.palm.location', {
-							    method:"getCurrentPosition",
-							    parameters:{},
+							var watch_id = options.assistant.controller.serviceRequest('palm://com.palm.location', {
+							    method:"startTracking",
+							    parameters:{"subscribe": true},
 							    onSuccess:WebOSGpsSuccess.bind(options.assistant),
 							    onFailure:WebOSGpsFailure.bind(options.assistant)
 							    }
 							);
-							options.assistant.controller.get("app-title").update('fail');
 
 						break;
 						default:
@@ -469,10 +470,17 @@ dojo.sensor.geolocation = {
 		             	   {'code': error.PERMISSION_DENIED, 'message': 'Error: The user has not accepted the terms of use for the Google Location Service, or the Google Service is off.'},
 		             	   {'code': error.APPLICATION_ERROR, 'message': 'Error: A pending location request already exists.'},
 		             	   {'code': error.APPLICATION_ERROR, 'message': 'Error: The application has been temporarily blacklisted.'}];
-		var webOSErr = codes[errorCode];
 		
-		error.code = webOSErr.code;
-		error.message = webOSErr.message;
+		// Validate errorCode
+		if( errorCode < 0 && errorCode < 8 ){
+			var webOSErr = codes[errorCode];
+			
+			error.code = webOSErr.code;
+			error.message = webOSErr.message;
+		}else{
+			error.code = error.IMPROPER_IMPLEMENTATION;
+			error.message = "Error: Invalid webOS error code.  Must be between 1 and 8 inclusive.";
+		}
 		
 		return error;            
 	}
