@@ -96,7 +96,7 @@ dojo.sensor.geolocation = {
 		//			Location information is often cached by the browser.  Maximum age allows the programmer to specify how old
 		//			cache information is used before it must be replaced by new information.
 		
-		if (options) {
+		if (typeof(options) == "object" ) {
 			options.watchPosition = true;
 	
 		}else{

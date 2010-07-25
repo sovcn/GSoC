@@ -42,6 +42,8 @@ dojo.sensor.accelerometer = {
 	var jilWatch = false;  // Bolean value to determine whether a JIL watchAcceleration has been initiated
 	var jilClear = false; // Determines whether JIL watchAcceleration was just cleared
 	
+	var _isFF = undefined; // Keeps track of whether or not the platform is firefox.
+	
 	var determineOrientation = function(/*Acceleration Object*/ a){
 		// summary:
 		//		Based on the values passed to it by its parameter, it determines which orientation (Portrait or Landscape)
@@ -110,7 +112,32 @@ dojo.sensor.accelerometer = {
 		
 		return false;
 		
-	}
+	};
+	
+	var standardizePlatforms = function(/*Acceleration Object*/ a){
+		if( dojo.sensor.getPlatform() == dojo.sensor.platforms.PHONE_GAP && // Must be phonegap to use device object
+						(device.platform == "iPod touch" || device.platform == "iPhone" || device.platform == "iPad")  ){
+			// Translate the iOS values to match with Android/W3C
+			a.x *= -10;
+			a.y *= -10;
+			a.z *= -10;
+		}
+		
+		if( _isFF ){
+			var accel = {
+				x: a.x,
+				y: a.y,
+				z: a.z
+			}
+			a = accel; // Fix readonly property of mozilla acceleration object.
+			
+			a.x *= -10;
+			a.y *= 10;
+			a.z *= 10;
+		}
+		
+		return a;
+	};
 	
 	dojo.sensor.accelerometer.clearWatch = function(/*Integer*/ watchId){
 		if(watchId){
@@ -139,7 +166,11 @@ dojo.sensor.accelerometer = {
 		//			called whenever the device switches between orientations (Portrait and Landscape) as determined by the
 		//			determineOrientation private method.
 		
-		if ( dojo.sensor.getPlatform() == dojo.sensor.platforms.NATIVE ) {
+		// Browser Detection.  Accelerometer supported in firefox >=3.6
+		var dua = navigator.userAgent;
+		_isFF = (parseFloat(dua.split("Firefox/")[1]) || undefined);
+		
+		if ( dojo.sensor.getPlatform() == dojo.sensor.platforms.NATIVE && (!_isFF || _isFF < 3.6) ) {
 			error = dojo.sensor.error;
 			error.code = error.UNSUPPORTED_FEATURE;
 			error.message = "Error: Accelerometer is currently not supported on any native platforms.";
@@ -151,8 +182,8 @@ dojo.sensor.accelerometer = {
 			if( options != undefined && typeof(options) == "object" ){
 				// Set up options object
 				var accel_options = {
-					getOrientation: false,
-				}
+					getOrientation: false
+				};
 				
 				accel_options.frequency = (options.frequency != undefined)? options.frequency : 1000; // Defaults to 1/10 of a second
 				accel_options.getOrientation = (options.getOrientation != undefined)? options.getOrientation : false; // defaults to false
@@ -170,6 +201,9 @@ dojo.sensor.accelerometer = {
 			
 			/* Function to handle, manipulate, and analyze accelerometer data */
 			var success = function(a){
+				
+				a = standardizePlatforms(a);
+				
 				var blockShake = false;  // Temp value .. goes out of scope
 	  			
 	  			if( accel_options.getOrientation == true ){
@@ -194,13 +228,6 @@ dojo.sensor.accelerometer = {
 	  			
 	  			_firstAcceleration = false;
 	  			
-	  			if( dojo.sensor.getPlatform() == dojo.sensor.platforms.PHONE_GAP && // Must be phonegap to use device object
-	  							(device.platform == "iPod touch" || device.platform == "iPhone" || device.platform == "iPad")  ){
-	  				// Translate the iOS values to match with Android/W3C
-	  				a.x *= -10;
-	  				a.y *= -10;
-	  				a.z *= -10;
-	  			}
 	  			
 	  			callback.success(a);
 	  			
@@ -261,11 +288,18 @@ dojo.sensor.accelerometer = {
 		  		},accel_options);
 		  		/* End Phonegap Implementation */
 			}else{
-				error = dojo.sensor.error;
+				// Attempt to listen to Firefox orientation event
+				
+				window.addEventListener("MozOrientation", function(a) {
+	                   /* 3 values: a.x, a.y, a.y */
+					success(a);
+	            }, true);
+
+				/*error = dojo.sensor.error;
 				error.code = error.UNSUPPORTED_FEATURE;
 				error.message = "Error: Accelerometer is currently not supported by this platform.";
 				
-				err(error);
+				err(error);*/
 			}
 			
 		}
