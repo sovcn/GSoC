@@ -2,19 +2,14 @@ dojo.require('dojo.sensor');
 dojo.provide("dojo.sensor.accelerometer");
 
 
-
-if( dojo.sensor.isLoaded() && dojo.sensor.getPlatform() == dojo.sensor.platforms.NATIVE ){
-	// Device must be running a platfrom like Phonegap for acceleration to work
-	console.error("Accelerometer is currently not supported on any native platforms.");
-}else{
-	// DO nothing, platform should be supported.
-	// TODO: Keep this updated as more platforms are added.
-}
-
 /*=====
 dojo.sensor.accelerometer = { 
   // summary:
   //    provides an interface for accessing the accelerometer of a given device.
+  // LANDSCAPE: Integer
+  //	Orientation constant for a device on its side.
+  // PORTRAIT: Integer
+  // 	Orientaiton constant for a device that is vertical.
 };
 =====*/
 
@@ -22,7 +17,12 @@ dojo.sensor.accelerometer = {
 (function(){
 	
 	// Orientation Constants
+	
+	// LANDSCAPE: Integer
+	//		Orientation constant
 	dojo.sensor.accelerometer.LANDSCAPE = 1;
+	// PORTRAIT: Integer
+	//		Orientation constant
 	dojo.sensor.accelerometer.PORTRAIT = 2;
 	
 	var _orientation = dojo.sensor.accelerometer.PORTRAIT; // default to portrait
@@ -129,7 +129,7 @@ dojo.sensor.accelerometer = {
 				y: a.y,
 				z: a.z
 			}
-			a = accel; // Fix readonly property of mozilla acceleration object.
+			a = accel; // Fix readonly glitch of mozilla acceleration object.
 			
 			a.x *= -10;
 			a.y *= 10;
@@ -140,6 +140,11 @@ dojo.sensor.accelerometer = {
 	};
 	
 	dojo.sensor.accelerometer.clearWatch = function(/*Integer*/ watchId){
+		// summary:
+		//		Attempts to stop the watchAcceleration method with the corresponding watchId.
+		// watchId: Integer
+		//		Unique identifier for a watchAcceleration watch.
+		
 		if(watchId){
 			clearInterval(watchId);
 		}
@@ -151,11 +156,11 @@ dojo.sensor.accelerometer = {
 	
 	dojo.sensor.accelerometer.watchAcceleration = function(/*Object*/ callback, /*Object*/ options){
 		// summary:
-		//		Implements the W3C accelerometer method of the same name using one of the following platforms: (Native or Phonegap).
-		//		Expects two objects as parameters.  The first parameter(callback) is an object containing various callback functions:
-		//		success, error, shake, orientationChange.  The second parameter is an object containing runtime options such as the
-		//		frequency of the watch.
+		//		Abstracts the W3C Device Orientation Event spec (http://dev.w3.org/geo/api/spec-source-orientation.html) and attempts to use various
+		//		methods depending on the current platform to retrieve the device's current acceleration values and orientation in space. If successful, the callback method
+		//		will be repeatedly called until the corresponding clearWatch method is called.
 		//	callback: Object
+		//			Contains one or more callback functions as properties.
 		//		success: Function
 		//			function to be called when the acceleration object has successfully been obtained from the device.
 		//		error: Function
@@ -165,15 +170,19 @@ dojo.sensor.accelerometer = {
 		//		orientationChange: Function
 		//			called whenever the device switches between orientations (Portrait and Landscape) as determined by the
 		//			determineOrientation private method.
+		// options: Object
+		//			Allows developer to specify the frequency and to request an orientation property be attached to the acceleration object (landscap/portrait)
+		// returns:
+		//		A unique identifier to be used to stop the watch at a later time.
 		
 		// Browser Detection.  Accelerometer supported in firefox >=3.6
 		var dua = navigator.userAgent;
 		_isFF = (parseFloat(dua.split("Firefox/")[1]) || undefined);
 		
-		if ( dojo.sensor.getPlatform() == dojo.sensor.platforms.NATIVE && (!_isFF || _isFF < 3.6) ) {
+		if ( (dojo.sensor.getPlatform() == dojo.sensor.platforms.NATIVE || dojo.sensor.getPlatform() == dojo.sensor.platforms.WEBOS) && (!_isFF || _isFF < 3.6) ) {
 			error = dojo.sensor.error;
 			error.code = error.UNSUPPORTED_FEATURE;
-			error.message = "Error: Accelerometer is currently not supported on any native platforms.";
+			error.message = "Error: Accelerometer is currently not supported by your native platform. Try Firefox >= 3.6 with a supported device.";
 			
 
 			return callback.error(error);

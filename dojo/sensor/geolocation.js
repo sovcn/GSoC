@@ -14,11 +14,9 @@ dojo.sensor.geolocation = {
 	var jilWatch = false;  // Bolean value to determine whether a JIL watchPosition has been initiated
 	var geolocationWatchId = []; // Keep track of the various watch ids
 	
-	var handleError = function(/*Object*/ error, /*Boolean*/ browser_supported){
-        // TODO - Proper error handling should be implemented.  console.log?
+	var handleError = function(/*Object*/ error){
         //alert('An Error Occured: code' + error.code);
 		// This function is called in conjunction with an error callback function.  May be overridden and used for additional error handling.
-		
 	}
 	
 	var determineSupport = function(){
@@ -49,9 +47,9 @@ dojo.sensor.geolocation = {
 	
 	dojo.sensor.geolocation.clearWatch = function(/*Mixed*/ watchId){
 		// summary:
-		//		Wrapper function for the W3C implementation. Emulates W3C functionality for other supported platforms.
+		//		Conforms to the W3C Geolocation spec (http://dev.w3.org/geo/api/spec-source.html). Emulates W3C functionality for other supported platforms.
 		//	description:
-		//		Stops the watchPosition function from monitoring changes in the user's location.
+		//		Stops the watchPosition function with the specified watchId from monitoring changes in the user's location.
 		//	watchId: Mixed
 		//		Could be either an Integer value (W3C and Bondi) or an object (Palm WebOS). The API will
 		//		dynamically determine which has been used and perform the necessary actions accordingly.
@@ -74,16 +72,14 @@ dojo.sensor.geolocation = {
 	
 	dojo.sensor.geolocation.watchPosition = function(/*Function*/callback, /*Object*/ options){
 		// summary:
-		//		watchPosition utilizes several methods which will monitor a user's geolocation and will fire a callback
-		//		any time their position changes. Utilizes the W3C navigator.geolocation interface.  Returns an identifier
-		//		that can be used to stop the method from monitoring the user's location.
-		// callback: Function
-		//		The function that will be called when a location is succesfully found and loaded
-		// error_callback: Function
-		//		The function that will be called when an error occurs.  Errors can come from two sources: geolocation methods and improper usage
+		//		Abstracts the W3C Geolocation Spec (http://dev.w3.org/geo/api/spec-source.html) and attempts to use various
+		//		methods depending on the current platform to retrieve the device's current location. If successful, the callback method
+		//		will be repeatedly called until the corresponding clearWatch method is called.
+		//	callback: Object
+		//			Contains one or more callback functions as properties.
 		//	options: Object
-		//		This is a javascript object holding various information for use with this function. Any values can be passed
-		//		with the options object however three common key values are as follows: enableHighAccuracy, timeout, maximumAge.
+		//		Contains runtime parameters.Any values can be passed with the options object however three common key values are as follows:
+		//		enableHighAccuracy, timeout, maximumAge as they are used in the W3C spec. (not all platforms support all 3).
 		//
 		//		enableHighAccuracy: boolean
 		//			Tells the position methods to attempt to retrieve the most accurate position information possible.  This is commonly
@@ -166,7 +162,6 @@ dojo.sensor.geolocation = {
 			
 	        if( determineSupport() ){
 	            // Browser is capable of geolocation
-	            location_support = true;
 				
 				// Allows developers to optionally specify several of the options allowed for in
 				// the W3C spec.
@@ -235,7 +230,7 @@ dojo.sensor.geolocation = {
 				    	}
 				    }
 					
-					callback.success(position, false); // Callback Function
+					callback.success(position); // Callback Function
 					
 					dojo.sensor.geolocation.last_heading = position.coords.simpleHeading; // Keep track of the last heading for callback function
 					
@@ -244,9 +239,9 @@ dojo.sensor.geolocation = {
 				
 				// Define default error function
 				var err = function(error){
-					handleError(error, location_support);
+					handleError(error);
 					
-					return callback.error(error, location_support); // Error Callback Function
+					return callback.error(error); // Error Callback Function
 				};
 				
 				var WebOSGpsSuccess = function(event){
@@ -272,7 +267,7 @@ dojo.sensor.geolocation = {
 									var error = dojo.sensor.error;
 									error.code = error.POSITION_UNAVAILABLE;
 									error.message = "Error: Unable to find location."
-									return err(error, true);
+									return err(error);
 								}
 								
 								var pos = packageJilLocation(loc);
@@ -307,8 +302,8 @@ dojo.sensor.geolocation = {
 								error.code = error.IMPROPER_IMPLEMENTATION;
 								error.message = "Error: webOS requires that you pass the current assistant object as a property of the options parameter.";
 								
-								handleError(error, location_support);
-								return callback.error(error, location_support);
+								handleError(error);
+								return callback.error(error);
 							}
 							
 							
@@ -340,7 +335,7 @@ dojo.sensor.geolocation = {
 									var error = dojo.sensor.error;
 									error.code = error.POSITION_UNAVAILABLE;
 									error.message = "Error: Unable to find location.";
-									return err(error, true);
+									return err(error);
 								}
 								
 								// Convert JIL locationInfo into W3C position object.
@@ -363,8 +358,8 @@ dojo.sensor.geolocation = {
 								error.code = error.IMPROPER_IMPLEMENTATION;
 								error.message = "Error: webOS requires that you pass the current assistant object as a property of the options parameter.";
 								
-								handleError(error, location_support);
-								return callback.error(error, location_support);
+								handleError(error);
+								return callback.error(error);
 							}
 							
 							
@@ -391,21 +386,19 @@ dojo.sensor.geolocation = {
 				
 	        }else if( false ){//dojo.gears.available ){ // google.gears ){
 	            // Try Google Gears - Fails in Safari... find workaround
-	            location_support = true;
 				alert('using Gears - TODO implement gears support');
 	            // TODO - Implement Gears support
 	        }else{
 	          
 	            // Browser is incapable of geolocation...
-	            location_support = false;
 				
 				if( options.watchPosition ){
 					error = dojo.sensor.error;
 					error.code = error.UNSUPPORTED_FEATURE;
 					error.message = "Error: watchPosition requires a compatible browser. Default location not supported.";
 					
-					handleError(error, location_support);
-					return callback.error(error, location_support);
+					handleError(error);
+					return callback.error(error);
 				}
 				
 				if ( default_position ) {
@@ -430,7 +423,7 @@ dojo.sensor.geolocation = {
 						timestamp: default_position.timestamp
 					};
 					
-					callback.success(pos, true); // Pass true as the second parameter to indicate that the a default location has been loaded.
+					callback.success(pos); // Pass true as the second parameter to indicate that the a default location has been loaded.
 				}
 				else{
 					// If no default coordinates were found return with an error
@@ -440,8 +433,8 @@ dojo.sensor.geolocation = {
 					error.message = "Error: browser does not support geolocation and no default position was specified."
 					
 					// Handle Error
-					handleError(error, location_support);
-					return callback.error(error, location_support);
+					handleError(error);
+					return callback.error(error);
 				}
 	        }
 	    }

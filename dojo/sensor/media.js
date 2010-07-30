@@ -3,27 +3,33 @@ dojo.provide("dojo.sensor.media");
 
 /*=====
 dojo.sensor.accelerometer = { 
-  // summary:
-  //    provides an interface for accessing the accelerometer of a given device.
+	// summary: The media module attempts to provide a level of abstraction for developers between their applications and the media capture capabilities
+	//		of devices on a variety of platforms.
 };
 =====*/
 
 
 // Define error constants
-
-if( dojo.sensor.isLoaded() && dojo.sensor.getPlatform() == dojo.sensor.platforms.NATIVE ){
-	// Device must be running a platfrom like Phonegap for acceleration to work
-	console.error("Camera is currently not supported on any native platforms.");
-}else{
 	// DO nothing, platform should be supported.
 	// TODO: Keep this updated as more platforms are added.
 	(function(){
 		
 		dojo.sensor.media = {
-				
+			// summary: The media module attempts to provide a level of abstraction for developers between their applications and the media capture capabilities
+			//		of devices on a variety of platforms.
 		};
 		
 		dojo.sensor.media.captureImage = function(callback, options){
+			// summary: Attempts to implement the W3C Media Capture API (http://dev.w3.org/2009/dap/camera/Overview-API.html) 
+			//		method of the same name across several platforms.
+			// callback: Object
+			//		Contains one or more callback functions as properties.
+			//		success: Function
+			//			function to be called when the image data has successfully been obtained from the device.
+			//		error: Function
+			//			called when an error occurs
+			// options: Object
+			//		Allows developer to specify several runtime parameters.  Common properties include: quality and maxNumberOfMediaFiles
 			
 			if( dojo.sensor.isLoaded() && dojo.sensor.getPlatform() == dojo.sensor.platforms.NATIVE ){
 				error = dojo.sensor.error;
@@ -82,7 +88,7 @@ if( dojo.sensor.isLoaded() && dojo.sensor.getPlatform() == dojo.sensor.platforms
 				
 				
 			}else{
-				// Attempt a native method ( not supported currently )
+				// Attempt a native method ( not currently supported by any known native platform )
 				navigator.device.captureImage(function(data){
 					callback.success(data);
 				},function(error){	
@@ -93,18 +99,48 @@ if( dojo.sensor.isLoaded() && dojo.sensor.getPlatform() == dojo.sensor.platforms
 		}
 		
 		dojo.sensor.media.captureVideo = function(callback, options){
+			// summary: (UNSUPPORTED) Attempts to implement the W3C Media Capture API (http://dev.w3.org/2009/dap/camera/Overview-API.html) 
+			//		method of the same name across several platforms.
+			// callback: Object
+			//		Contains one or more callback functions as properties.
+			//		success: Function
+			//			function to be called when the video data has successfully been obtained from the device.
+			//		error: Function
+			//			called when an error occurs
+			// options: Object
+			//		Allows developer to specify several runtime parameters.  Common properties include: quality and maxNumberOfMediaFiles
 			error = dojo.sensor.error;
 			error.code = error.UNSUPPORTED_FEATURE;
 			error.message = "Error: Function not yet supported.";
 		}
 		
 		dojo.sensor.media.captureAudio = function(callback, options){
+			// summary: (UNSUPPORTED) Attempts to implement the W3C Media Capture API (http://dev.w3.org/2009/dap/camera/Overview-API.html) 
+			//		method of the same name across several platforms.
+			// callback: Object
+			//		Contains one or more callback functions as properties.
+			//		success: Function
+			//			function to be called when the audio data has successfully been obtained from the device.
+			//		error: Function
+			//			called when an error occurs
+			// options: Object
+			//		Allows developer to specify several runtime parameters.  Common properties include: quality and maxNumberOfMediaFiles
 			error = dojo.sensor.error;
 			error.code = error.UNSUPPORTED_FEATURE;
 			error.message = "Error: Function not yet supported.";
 		}
 		
 		dojo.sensor.media.getViewFinder = function(callback, options){
+			// summary: (UNSUPPORTED) Attempts to implement the W3C Media Capture API (http://dev.w3.org/2009/dap/camera/Overview-API.html) 
+			//		method of the same name across several platforms.
+			// callback: Object
+			//		Contains one or more callback functions as properties.
+			//		success: Function
+			//			Not supported
+			//		error: Function
+			//			Not supported
+			// options: Object
+			//		Allows developer to specify several runtime parameters.  Common properties include: quality and maxNumberOfMediaFiles
 			error = dojo.sensor.error;
 			error.code = error.UNSUPPORTED_FEATURE;
 			error.message = "Error: Function not yet supported";
@@ -130,5 +166,4 @@ if( dojo.sensor.isLoaded() && dojo.sensor.getPlatform() == dojo.sensor.platforms
 		}
 		
 	})();
-} // end else
 
