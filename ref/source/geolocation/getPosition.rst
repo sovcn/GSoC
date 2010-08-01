@@ -1,8 +1,42 @@
 .. highlight:: javascript
 
+
+.. _get-position-label:
+
 ============================
 geolocation.getPosition()
 ============================
+
+
+getPosition() Example
+************************************
+
+This is a basic example of the functionality of the getPosition() method::
+
+   require('dojo.sensor.geolocation');
+   
+   dojo.addOnLoad(function(){
+   	var options = {
+   		timeout: 6000, // wait 6 seconds before returning with an error
+   		enableHighAccuracy: true, // may drain the battery of mobile devices faster
+   		getHeading: true,
+   		onHeadingChange: function(heading){
+   			alert('the heading has changed to: ' + heading);
+   		}
+   	}
+   	
+   	dojo.sensor.geolocation.getPosition({
+   		success: function(position){
+   			console.log(position.coords.latitude + " " + position.coords.longitude);
+   		},
+   		error: function(error){
+   			console.error(error.message);
+   		}
+   	},
+   	options);
+   
+   });
+
 
 Parameters
 *************************
@@ -58,34 +92,6 @@ Properties:
 .. note::
 	If any of these properties cannot be provided, they will be null
 
-getPosition() Example
-=============================
-
-This is a basic example of the functionality of the getPosition() method::
-
-   require('dojo.sensor.geolocation');
-   
-   dojo.addOnLoad(function(){
-   	var options = {
-   		timeout: 6000, // wait 6 seconds before returning with an error
-   		enableHighAccuracy: true, // may drain the battery of mobile devices faster
-   		getHeading: true,
-   		onHeadingChange: function(heading){
-   			alert('the heading has changed to: ' + heading);
-   		}
-   	}
-   	
-   	dojo.sensor.geolocation.getPosition({
-   		success: function(position){
-   			console.log(position.coords.latitude + " " + position.coords.longitude);
-   		},
-   		error: function(error){
-   			console.error(error.message);
-   		}
-   	},
-   	options);
-   
-   });
 
 
 Options (object)
