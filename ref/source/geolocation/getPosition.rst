@@ -1,3 +1,5 @@
+.. highlight:: javascript
+
 ============================
 geolocation.getPosition()
 ============================
@@ -7,8 +9,84 @@ Parameters
 
 Callback (object)
 --------------------------
+The callback parameter provides an interface of several functions for the developer to interact with the geolocation module. The two properties supported by
+the geolocation callback object are as follows:
 
-in progress
+* **success** (Function)
+	This is called whenever the API has successfully retrieved and parsed a :ref:`position-object-label`. It receives the resulting :ref:`position-object-label` as a parameter.
+	
+* **error** (Function)
+	This function is called whenever an error is encountered and receives a sensor.error(TODO - LINK) object as a parameter.
+
+.. _position-object-label:
+
+Position Object
+=============================
+
+The position object conforms to the `W3C position interface`_.
+
+.. _W3C position interface: http://dev.w3.org/geo/api/spec-source.html#position_interface
+
+Properties:
+	
+	* **coords**
+		- **lattitude**
+			Geographic coordinate in decimal degrees.
+		- **longitude**
+			Geographic coordinate in decimal degrees.
+		- **altitude**
+			The altitude attribute denotes the height of the position, specified in meters. If the API cannot provide altitude information,
+			the value of this attribute must be null.
+		- **accuracy**
+			Denotes the accuracy of the geographic coordinates of the :ref:`position-object-label` in meters.
+		- **altitudeAccuracy**
+			Denotes the accuracy of the altitude property in meters.  If the API cannot provide altitude information,
+			the value of this attribute must be null.
+		- **heading**
+			The direction of travel of the device specified in degrees (0 <= heading < 360).  If the device is stationary, heading will have a
+			NaN value.
+		- **speed**
+			Denotes the current ground speed of the device in meters per second.
+	* **timestamp**
+		Represents the time when the :ref:`position-object-label` was acquired represented as a `DOMTimeStamp`_.
+	* **heading**
+		If the getHeading value has been passed by the :ref:`Options Object <heading-label>` this property will contain an integer value representing
+		the current direction that the device is traveling.
+		
+.. _DomTimeStamp: http://www.w3.org/TR/DOM-Level-3-Core/core.html#Core-DOMTimeStamp
+
+.. note::
+	If any of these properties cannot be provided, they will be null
+
+getPosition() Example
+=============================
+
+This is a basic example of the functionality of the getPosition() method::
+
+   require('dojo.sensor.geolocation');
+   
+   dojo.addOnLoad(function(){
+   	var options = {
+   		timeout: 6000, // wait 6 seconds before returning with an error
+   		enableHighAccuracy: true, // may drain the battery of mobile devices faster
+   		getHeading: true,
+   		onHeadingChange: function(heading){
+   			alert('the heading has changed to: ' + heading);
+   		}
+   	}
+   	
+   	dojo.sensor.geolocation.getPosition({
+   		success: function(position){
+   			console.log(position.coords.latitude + " " + position.coords.longitude);
+   		},
+   		error: function(error){
+   			console.error(error.message);
+   		}
+   	},
+   	options);
+   
+   });
+
 
 Options (object)
 -----------------------------
@@ -42,6 +120,8 @@ The following properties conform to the W3C spec (http://dev.w3.org/geo/api/spec
 	
 These properties do not conform to the W3C spec, but are available within the sensor API
 
+.. _heading-label:
+
 * **getHeading** (boolean)
 	A true value will cause the API to return an additional parameter in the position object of the type Integer which corresponds to 8 different headings:
 		#. dojo.sensor.geolocation.NORTH
@@ -62,15 +142,13 @@ Experimental Properties
 .. warning::
 	These parameters are not guaranteed, however they should work similarly across most of the supported platforms.
 	
-	
+* **frequency** (long)
+	Indicates the time in milliseconds that watchPosition() should wait between position requests. *geolocation.watchPosition() only* **(default: 1000)**
+
 Options Example
 ============================
 
-.. highlight:: javascript
-
-.. highlight:: javascript
-
-This is a normal text paragraph. The next paragraph is a code sample::
+Example::
 
    var options = {
 		enableHighAccuracy: true, // Boolean
