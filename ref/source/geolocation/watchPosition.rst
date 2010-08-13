@@ -4,11 +4,14 @@
 geolocation.watchPosition()
 ============================
 
-The geolocation.watchPosition() function is designed to allow developers to repeated request new location information.
+The geolocation.watchPosition() function is designed to allow developers to repeatedly request new location information.
 After each new request, the success callback function is called with an updated :ref:`position-object-label`.
 
 watchPosition utilizes the same basic structure as :doc:`getPosition`. 
 For information regarding its customization and callback functions please see :doc:`getPosition`.
+
+.. note::
+	geolocation.watchPosition() returns a unique identifier which can be passed to :doc:`clearWatch` in order to cancel the watch.
 
 watchPosition() Example
 ************************************
@@ -31,7 +34,7 @@ This is a basic example of the functionality of the watchPosition() method::
    	
    	// The only real difference between this and getPosition() is that this will call
    	// the success callback function repeatedly.
-   	dojo.sensor.geolocation.watchPosition({
+   	var watch_id = dojo.sensor.geolocation.watchPosition({ // keep track of watch_id so that the watch can be canceled later if need be.
    		success: function(position){
    			console.log(position.coords.latitude + " " + position.coords.longitude);
    		},
@@ -42,4 +45,3 @@ This is a basic example of the functionality of the watchPosition() method::
    	options);
    
    });
-

@@ -6,48 +6,16 @@
 Reference Guide
 =======================================================
 
-.. note::
-	This is a note
-	
-.. warning::
-	This is a warning
-	
-	
-.. highlight:: javascript
-
-This is a normal text paragraph. The next paragraph is a code sample::
-
-   require('dojo.sensor.geolocation');
-   
-   dojo.addOnLoad(function(){
-   	dojo.sensor.geolocation.getPosition({
-   		success: function(position){
-   			console.log(position.coords.latitude + " " + position.coords.longitude);
-   		},
-   		error: function(error){
-   			console.error(error.message);
-   		}
-   	},
-   	{getHeading: true});
-   
-   });
-
-This is a normal text paragraph again.
+dojo.sensor is an API designed to simplify the process of building web applications that utilize the sensory 
+information made available on many mobile and desktop platforms.
 
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    
    sensor.rst
    geolocation.rst
    accelerometer.rst
    mediaCapture.rst
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 
