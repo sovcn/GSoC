@@ -1,7 +1,6 @@
 
 Dojo Sensor is a dojo module designed to allow developers to access device interfaces which allow web applications to utilize environmental data on a device.  At the present there are three specific modules within Dojo Sensor: geolocation, accelerometer, and media capture.  More information on these modules can be viewed in the documentation.
 
-.. note:: This is a note.
 
 Installation procedure:
 
